@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeHostel | Smart Security</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        /* Custom Properties / Variables */
+        :root {
+            --primary-color: #5d50c6; /* A purple/indigo for primary actions */
+            --secondary-color: #38a169; /* Green for safe status */
+            --danger-color: #e53e3e; /* Red for alerts */
+            --warning-color: #dd6b20; /* Orange for warnings */
+            --background-color: #f7f7f7;
+            --card-background: #ffffff;
+            --text-color: #2d3748;
+            --sidebar-bg: #2d3748;
+        }
+
+        /* Base Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        /* Essential utility class for JS toggling */
+        .hidden {
+            display: none !important;
+        }
+
+        /* ============ LOGIN PAGE STYLING ============ */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--primary-color);
+            background-image: linear-gradient(135deg, var(--primary-color), #4c4196);
+        }
+
+        .login-box {
+            background: var(--card-background);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-box h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--primary-color);
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        .input-group i {
+            color: var(--primary-color);
+            margin-right: 10px;
+        }
+
+        .input-group input {
+            border: none;
+            outline: none;
+            flex-grow: 1;
+            font-size: 16px;
+            padding: 5px 0;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .login-button:hover {
+            background-color: #4c4196;
+        }
+
+
+        /* ============ DASHBOARD STYLING ============ */
+        .dashboard-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background-color: var(--card-background);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-info span, .user-info i {
+            margin-right: 20px;
+            font-size: 18px;
+        }
+
+        .logout-button {
+            padding: 8px 15px;
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .main-content {
+            display: flex;
+            flex-grow: 1;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background-color: var(--sidebar-bg);
+            padding-top: 20px;
+            color: white;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar nav ul {
+            list-style: none;
+        }
+
+        .sidebar nav li {
+            padding: 15px 30px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar nav li:hover, .sidebar nav li.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--primary-color);
+            padding-left: 26px; /* Adjust padding due to border */
+        }
+
+        .sidebar nav li i {
+            margin-right: 15px;
+            font-size: 18px;
+        }
+
+        /* Content Area */
+        .content-area {
+            flex-grow: 1;
+            padding: 30px;
+        }
+
+        .content-area h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .status-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid; /* Placeholder, color changed by status classes */
+        }
+
+        .card h3 {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .status-text {
+            font-size: 1.8em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Status Colors */
+        .status-safe { border-left-color: var(--secondary-color); }
+        .status-safe .status-text { color: var(--secondary-color); }
+
+        .status-warning { border-left-color: var(--warning-color); }
+        .status-warning .status-text { color: var(--warning-color); }
+
+        .status-alert { border-left-color: var(--danger-color); }
+        .status-alert .status-text { color: var(--danger-color); }
+
+        /* Basic Media Query for better mobile layout */
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+            }
+            .sidebar nav ul {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-around;
+                padding: 0 10px;
+            }
+            .sidebar nav li {
+                border-left: none !important; 
+                padding: 10px;
+                flex-basis: 45%;
+                text-align: center;
+                justify-content: center;
+            }
+            .sidebar nav li i {
+                margin-right: 5px;
+            }
+            .navbar {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .user-info {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container" id="loginPage">
+        <div class="login-box">
+            <h2>SafeHostel Login</h2>
+            <form id="loginForm"> <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" placeholder="Username" required> </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="Password" required> </div>
+                <button type="submit" class="login-button">Log In</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="dashboard-container hidden" id="dashboardPage"> <header class="navbar">
+            <div class="logo">SafeHostel Admin</div>
+            <div class="user-info">
+                <i class="fas fa-bell"></i>
+                <span>Warden S.K.</span>
+                <button class="logout-button" id="logoutButton">Logout</button> </div>
+        </header>
+
+        <main class="main-content">
+            <aside class="sidebar">
+                <nav>
+                    <ul class="main-nav">
+                        <li class="active"><a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+                        <li><a href="SafeHostel.html"><i class="fas fa-door-open"></i> Gate Status</a></li>
+                        <li><a href="residents.html"><i class="fas fa-users"></i> Residents</a></li>
+                        <li><a href="alerts.html"><i class="fas fa-exclamation-triangle"></i> Alerts</a></li>
+                        <li><a href="analytics.html"><i class="fas fa-chart-line"></i> Analytics</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+   <!-- ====== DASHBOARD: Content Area (drop-in replacement) ====== -->
+<section class="content-area" id="dashboardHome">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <h1>Welcome to SafeHostel Dashboard</h1>
+        <p class="muted">Monitor and manage the security status of the hostel.</p>
+      </div>
+      <div class="chip" style="display:inline-flex;align-items:center;gap:8px;background:var(--card-background);border:1px solid #e2e8f0;border-radius:999px;padding:6px 10px">
+        <i class="fas fa-clock"></i> <span id="liveClock">--:--:--</span>
+      </div>
+    </div>
+  
+    <!-- Quick actions -->
+    <div class="quick-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
+      <a class="qa-btn" href="#/gate-status" title="Open Gate Status"><i class="fas fa-door-open"></i> Gate Status</a>
+      <a class="qa-btn" href="#/residents" title="Open Residents"><i class="fas fa-users"></i> Residents</a>
+      <a class="qa-btn" href="#/alerts" title="Open Alerts"><i class="fas fa-bell"></i> Alerts</a>
+      <a class="qa-btn" href="#/analytics" title="Open Analytics"><i class="fas fa-chart-line"></i> Analytics</a>
+    </div>
+  
+    <div class="status-cards" style="margin-top:18px">
+      <!-- Main Gate -->
+      <div class="card status-safe" id="cardGate">
+        <h3>Main Gate</h3>
+        <p class="status-text" id="gateText">LOCKED <i class="fas fa-check-circle"></i></p>
+        <p class="small muted" id="gateMeta">Bolt engaged • Updated just now</p>
+        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="mini-btn" id="btnToggleGate"><i class="fas fa-lock-open"></i> Toggle Lock</button>
+          <button class="mini-btn" id="btnPulseGate"><i class="fas fa-stopwatch"></i> Open 10s</button>
+        </div>
+      </div>
+  
+      <!-- Room 203 Window -->
+      <div class="card status-warning" id="cardRoom">
+        <h3>Room 203</h3>
+        <p class="status-text" id="roomText">Window Open <i class="fas fa-exclamation-circle"></i></p>
+        <p class="small muted" id="roomMeta">Sensor: REED-203 • Updated just now</p>
+        <div style="margin-top:8px">
+          <button class="mini-btn" id="btnToggleWindow"><i class="fas fa-window-maximize"></i> Toggle Window</button>
+        </div>
+      </div>
+  
+      <!-- Residents / Occupancy -->
+      <div class="card status-safe" id="cardOcc">
+        <h3>Total Residents</h3>
+        <p class="status-text" id="occText">150 / 150 <i class="fas fa-users"></i></p>
+        <div class="occ-bar" aria-label="Occupancy" style="height:10px;background:#edf2f7;border-radius:999px;overflow:hidden;margin-top:8px;border:1px solid #e2e8f0">
+          <div id="occFill" style="height:100%;width:100%;background:linear-gradient(90deg,var(--secondary-color),#48bb78)"></div>
+        </div>
+        <p class="small muted" id="occMeta">Occupancy: <span id="occPct">100%</span></p>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button class="mini-btn" id="btnCheckOut"><i class="fas fa-user-minus"></i> Check-out 1</button>
+          <button class="mini-btn" id="btnCheckIn"><i class="fas fa-user-plus"></i> Check-in 1</button>
+        </div>
+      </div>
+  
+      <!-- Last Alert -->
+      <div class="card status-alert" id="cardAlert">
+        <h3>Last Alert</h3>
+        <p class="status-text" id="alertText">Motion Detected (2 min ago) <i class="fas fa-siren-on"></i></p>
+        <p class="small muted" id="alertMeta">Severity: <span id="alertSev">Warning</span> • Source: Lobby PIR</p>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button class="mini-btn" id="btnAck"><i class="fas fa-bell-slash"></i> Acknowledge</button>
+          <button class="mini-btn" id="btnResolve"><i class="fas fa-check"></i> Resolve</button>
+          <button class="mini-btn" id="btnSimAlert"><i class="fas fa-flask"></i> Simulate</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- ====== tiny helpers (scoped styles) ====== -->
+  <style>
+    .mini-btn{
+      border:1px solid #e2e8f0; background:transparent; color:var(--text-color);
+      padding:6px 10px; border-radius:8px; cursor:pointer; font-size:13px;
+    }
+    .mini-btn:hover{ filter:brightness(.97) }
+    .small{ font-size:12px }
+    .muted{ color:#718096 }
+    .qa-btn{
+      display:inline-flex; align-items:center; gap:8px; text-decoration:none;
+      border:1px solid #e2e8f0; padding:8px 12px; border-radius:999px; color:var(--text-color);
+      background:var(--card-background);
+    }
+    .qa-btn:hover{ filter:brightness(.97) }
+  </style>
+  
+  <!-- ====== scoped script to animate the cards ====== -->
+  <script>
+  (function(){
+    const $ = (q, el=document)=> el.querySelector(q);
+    // Live clock
+    const clock = $('#liveClock');
+    setInterval(()=>{ const d=new Date(); clock.textContent=d.toLocaleTimeString(); }, 1000);
+  
+    /* ===== Gate card ===== */
+    const cardGate = $('#cardGate'), gateText = $('#gateText'), gateMeta = $('#gateMeta');
+    let gateLocked = true;
+    function paintGate(){
+      cardGate.classList.toggle('status-safe', gateLocked);
+      cardGate.classList.toggle('status-alert', !gateLocked);
+      gateText.innerHTML = gateLocked ? 'LOCKED <i class="fas fa-check-circle"></i>' : 'UNLOCKED <i class="fas fa-unlock"></i>';
+      gateMeta.textContent = (gateLocked?'Bolt engaged':'Bolt disengaged') + ' • Updated just now';
+    }
+    $('#btnToggleGate').addEventListener('click', ()=>{ gateLocked = !gateLocked; paintGate(); });
+    $('#btnPulseGate').addEventListener('click', ()=>{
+      if(!gateLocked) return;
+      gateLocked = false; paintGate();
+      setTimeout(()=>{ gateLocked = true; paintGate(); }, 10000);
+    });
+    paintGate();
+  
+    /* ===== Room card ===== */
+    const cardRoom = $('#cardRoom'), roomText = $('#roomText'), roomMeta = $('#roomMeta');
+    let windowOpen = true;
+    function paintRoom(){
+      cardRoom.classList.toggle('status-warning', windowOpen);
+      cardRoom.classList.toggle('status-safe', !windowOpen);
+      roomText.innerHTML = windowOpen ? 'Window Open <i class="fas fa-exclamation-circle"></i>' : 'Window Closed <i class="fas fa-check-circle"></i>';
+      roomMeta.textContent = 'Sensor: REED-203 • Updated just now';
+    }
+    $('#btnToggleWindow').addEventListener('click', ()=>{ windowOpen = !windowOpen; paintRoom(); });
+    paintRoom();
+  
+    /* ===== Occupancy card ===== */
+    const occText = $('#occText'), occFill = $('#occFill'), occMeta = $('#occMeta'), occPct = $('#occPct');
+    let total=150, present=150;
+    function paintOcc(){
+      present = Math.max(0, Math.min(total, present));
+      const pct = Math.round((present/total)*100);
+      occText.innerHTML = `${present} / ${total} <i class="fas fa-users"></i>`;
+      occFill.style.width = pct + '%';
+      occPct.textContent = pct + '%';
+      occMeta.innerHTML = `Occupancy: <span id="occPct">${pct}%</span>`;
+      const card = $('#cardOcc');
+      card.classList.toggle('status-alert', pct<60);
+      card.classList.toggle('status-warning', pct>=60 && pct<90);
+      card.classList.toggle('status-safe', pct>=90);
+    }
+    $('#btnCheckOut').addEventListener('click', ()=>{ present--; paintOcc(); });
+    $('#btnCheckIn').addEventListener('click', ()=>{ present++; paintOcc(); });
+    paintOcc();
+  
+    /* ===== Last Alert card ===== */
+    const cardAlert = $('#cardAlert'), alertText = $('#alertText'), alertMeta = $('#alertMeta'), alertSev = $('#alertSev');
+    const types = ['Motion','Door','Fire','Panic','Camera'];
+    const sevs  = ['Info','Warning','Critical'];
+    const locs  = ['Lobby','Rear Corridor','Kitchen','Main Gate','Room 203','Parking'];
+    let lastAlert = { type:'Motion', sev:'Warning', mins:2, src:'Lobby PIR' };
+  
+    function paintAlert(){
+      const cls = lastAlert.sev;
+      cardAlert.classList.remove('status-safe','status-warning','status-alert');
+      if(cls==='Info') cardAlert.classList.add('status-safe');
+      if(cls==='Warning') cardAlert.classList.add('status-warning');
+      if(cls==='Critical') cardAlert.classList.add('status-alert');
+      alertText.innerHTML = `${lastAlert.type} Detected (${lastAlert.mins} min ago) <i class="fas fa-siren-on"></i>`;
+      alertMeta.innerHTML = `Severity: <span id="alertSev">${lastAlert.sev}</span> • Source: ${lastAlert.src}`;
+    }
+    function tickAlertTime(){
+      if(lastAlert.mins < 120){ lastAlert.mins++; paintAlert(); }
+    }
+    setInterval(tickAlertTime, 60000);
+  
+    $('#btnAck').addEventListener('click', ()=>{ lastAlert.sev='Info'; paintAlert(); });
+    $('#btnResolve').addEventListener('click', ()=>{ lastAlert.sev='Info'; lastAlert.mins=0; paintAlert(); });
+    $('#btnSimAlert').addEventListener('click', ()=>{
+      lastAlert = {
+        type: types[Math.floor(Math.random()*types.length)],
+        sev:  sevs[Math.floor(Math.random()*sevs.length)],
+        mins: 0,
+        src:  locs[Math.floor(Math.random()*locs.length)] + ' Sensor'
+      };
+      paintAlert();
+    });
+    paintAlert();
+  })();
+  </script>
+  
+
+    <script>
+        // Get references to the key HTML elements using their IDs
+        const loginForm = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginPage = document.getElementById('loginPage');
+        const dashboardPage = document.getElementById('dashboardPage');
+        const logoutButton = document.getElementById('logoutButton');
+
+        // --- 1. Define the correct, hardcoded credentials for this UI test ---
+        const CORRECT_USERNAME = "warden";
+        const CORRECT_PASSWORD = "safehostel";
+
+        // --- 2. Login Logic Function ---
+        function handleLogin(event) {
+            // Stops the page from refreshing when the form is submitted
+            event.preventDefault(); 
+
+            const user = usernameInput.value;
+            const pass = passwordInput.value;
+
+            if (user === CORRECT_USERNAME && pass === CORRECT_PASSWORD) {
+                // Successful Login: Hide login and show dashboard
+                alert("Login successful! Welcome to the SafeHostel Dashboard.");
+                loginPage.classList.add('hidden');
+                dashboardPage.classList.remove('hidden');
+
+            } else {
+                // Failed Login
+                alert("Login Failed: Incorrect username or password. Please use 'warden' and 'safehostel'.");
+                passwordInput.value = ''; // Clear password field on failure
+            }
+        }
+
+        // --- 3. Logout Logic Function ---
+        function handleLogout() {
+            // Logout: Show login and hide dashboard
+            dashboardPage.classList.add('hidden');
+            loginPage.classList.remove('hidden');
+            
+            // Clear the inputs
+            usernameInput.value = '';
+            passwordInput.value = '';
+        }
+
+
+        // --- 4. Attach Event Listeners (The link between the button and the code) ---
+        // Listen for the form submission (when the "Log In" button is clicked)
+        if (loginForm) {
+            loginForm.addEventListener('submit', handleLogin);
+        }
+
+        // Listen for the logout button click
+        if (logoutButton) {
+            logoutButton.addEventListener('click', handleLogout);
+        }
+    </script>
+</body>
+</html>

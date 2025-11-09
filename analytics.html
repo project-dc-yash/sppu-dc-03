@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SafeHostel | Analytics</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    :root{
+      --primary:#5d50c6; --secondary:#38a169; --danger:#e53e3e; --warning:#dd6b20;
+      --bg:#f7f7f7; --card:#ffffff; --text:#2d3748; --muted:#718096; --border:#e2e8f0; --ring:rgba(93,80,198,.35); --chip:#edf2f7;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#0f1220; --card:#151a2e; --text:#e6eaf3; --muted:#9aa3b2; --border:#232a45; --chip:#0f142c; --ring:rgba(93,80,198,.5); }
+    }
+    [data-theme="light"]{ --bg:#f7f7f7; --card:#fff; --text:#2d3748; --muted:#718096; --border:#e2e8f0; --chip:#edf2f7; --ring:rgba(93,80,198,.35); }
+    [data-theme="dark"]{ --bg:#0f1220; --card:#151a2e; --text:#e6eaf3; --muted:#9aa3b2; --border:#232a45; --chip:#0f142c; --ring:rgba(93,80,198,.5); }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text)}
+    .hidden{display:none !important}
+    :focus-visible{outline:2px solid var(--ring); outline-offset:2px; border-radius:8px}
+
+    header{position:sticky; top:0; z-index:20; background:var(--card); border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 20px;}
+    .brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px; color:var(--primary)}
+    .actions{display:flex; align-items:center; gap:10px}
+    .seg{display:inline-flex; border:1px solid var(--border); border-radius:12px; overflow:hidden}
+    .seg button{border:none; background:transparent; color:var(--text); padding:8px 12px; cursor:pointer}
+    .seg .active{background:var(--primary); color:#fff}
+
+    .btn{border:1px solid var(--border); background:transparent; color:var(--text); padding:8px 12px; border-radius:10px; cursor:pointer}
+    .btn:hover{filter:brightness(.96)} .btn:active{transform:translateY(1px)}
+    .btn.primary{background:var(--primary); color:#fff; border-color:transparent}
+    .btn.success{background:var(--secondary); color:#fff; border-color:transparent}
+    .btn.warn{background:var(--warning); color:#fff; border-color:transparent}
+    .btn.danger{background:var(--danger); color:#fff; border-color:transparent}
+    .chip{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; font-size:12px; background:var(--chip); color:var(--muted); border:1px solid var(--border)}
+
+    main{padding:20px; max-width:1300px; margin:0 auto}
+    h1{margin:0; color:var(--primary)}
+    .muted{color:var(--muted)}
+    .row{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px}
+    .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; box-shadow:0 8px 24px rgba(0,0,0,.06)}
+
+    .filters{display:flex; flex-wrap:wrap; gap:10px; margin:14px 0}
+    .input, select{padding:10px 12px; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:10px}
+    .date-range{display:flex; gap:8px; align-items:center}
+
+    .stats{display:grid; grid-template-columns:repeat(4, minmax(180px,1fr)); gap:14px; margin:14px 0}
+    .card h3{margin:0 0 6px; font-size:14px; color:var(--muted)}
+    .big{font-size:28px; font-weight:800; display:flex; align-items:center; gap:8px}
+
+    .charts{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+    @media (max-width: 980px){ .charts{grid-template-columns:1fr} }
+    canvas{width:100%; height:340px; display:block; border:1px solid var(--border); border-radius:12px; background:var(--card)}
+    .wide{grid-column:1 / -1}
+
+    /* Heatmap legend */
+    .legend{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); margin-top:8px}
+    .swatch{width:20px; height:12px; border:1px solid var(--border); border-radius:4px}
+    .toasts{position:fixed; right:16px; top:16px; display:flex; flex-direction:column; gap:10px; z-index:70}
+    .toast{background:var(--card); border:1px solid var(--border); padding:10px 14px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.25); display:flex; align-items:center; gap:10px; min-width:260px}
+    .toast.success{border-left:5px solid var(--secondary)} .toast.warn{border-left:5px solid var(--warning)} .toast.danger{border-left:5px solid var(--danger)}
+  </style>
+</head>
+<body>
+  <div class="toasts" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <header>
+    <div class="brand"><i class="fa-solid fa-chart-line"></i><span>SafeHostel • Analytics</span></div>
+    <div class="actions">
+      <div class="seg" role="group" aria-label="Theme">
+        <button id="lightBtn">Light</button>
+        <button id="autoBtn" class="active">Auto</button>
+        <button id="darkBtn">Dark</button>
+      </div>
+      <button class="btn" id="exportCsv"><i class="fa-solid fa-file-export"></i> Export Alerts CSV</button>
+      <button class="btn" id="importCsv"><i class="fa-solid fa-file-import"></i> Import Alerts CSV</button>
+      <button class="btn primary" id="simulate"><i class="fa-solid fa-flask"></i> Simulate Alerts</button>
+      <button class="btn" id="exportPNGs"><i class="fa-regular fa-image"></i> Export Charts PNG</button>
+      <input type="file" id="csvInput" accept=".csv" class="hidden"/>
+    </div>
+  </header>
+
+  <main>
+    <div class="row">
+      <div>
+        <h1>Analytics</h1>
+        <div class="muted">Trends and distributions derived from Alerts data in your browser.</div>
+      </div>
+      <div class="chip"><i class="fa-solid fa-database"></i> Data source: <span id="srcNote">localStorage</span></div>
+    </div>
+
+    <!-- Filters -->
+    <section class="card">
+      <div class="filters">
+        <div class="seg" role="group" aria-label="Range">
+          <button class="rangeBtn active" data-range="today">Today</button>
+          <button class="rangeBtn" data-range="7d">7d</button>
+          <button class="rangeBtn" data-range="30d">30d</button>
+        </div>
+        <div class="date-range">
+          <label class="muted">From</label>
+          <input type="date" id="fromDate" class="input"/>
+          <label class="muted">To</label>
+          <input type="date" id="toDate" class="input"/>
+          <button class="btn" id="applyCustom"><i class="fa-solid fa-calendar-check"></i> Apply</button>
+        </div>
+        <select id="typeFilter">
+          <option value="">All Types</option>
+          <option>Motion</option><option>Door</option><option>Fire</option><option>Panic</option><option>Camera</option>
+        </select>
+        <select id="sevFilter">
+          <option value="">All Severity</option>
+          <option value="info">Info</option>
+          <option value="warning">Warning</option>
+          <option value="critical">Critical</option>
+        </select>
+        <button class="btn" id="clearFilters"><i class="fa-solid fa-filter-circle-xmark"></i> Clear</button>
+      </div>
+      <div class="muted" id="rangeNote">Showing: Today</div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats">
+      <div class="card"><h3>Total Alerts</h3><div class="big"><i class="fa-solid fa-bell"></i><span id="statTotal">0</span></div></div>
+      <div class="card"><h3>Critical</h3><div class="big"><i class="fa-solid fa-triangle-exclamation"></i><span id="statCrit">0</span></div></div>
+      <div class="card"><h3>Ack/Resolved</h3><div class="big"><i class="fa-regular fa-circle-check"></i><span id="statClosed">0</span></div></div>
+      <div class="card"><h3>Avg/Day</h3><div class="big"><i class="fa-solid fa-chart-area"></i><span id="statAvg">0</span></div></div>
+    </section>
+
+    <!-- Charts -->
+    <section class="charts">
+      <div class="card">
+        <h3>Alerts by Type</h3>
+        <canvas id="chartType" width="640" height="340"></canvas>
+      </div>
+      <div class="card">
+        <h3>Alerts by Severity</h3>
+        <canvas id="chartSev" width="640" height="340"></canvas>
+      </div>
+      <div class="card wide">
+        <h3>Trend: Alerts per Day</h3>
+        <canvas id="chartTrend" width="1280" height="340"></canvas>
+      </div>
+      <div class="card wide">
+        <h3>Heatmap: Hour × Weekday</h3>
+        <canvas id="chartHeat" width="1280" height="340"></canvas>
+        <div class="legend">
+          <span class="muted">Low</span>
+          <span class="swatch" id="sw1"></span>
+          <span class="swatch" id="sw2"></span>
+          <span class="swatch" id="sw3"></span>
+          <span class="swatch" id="sw4"></span>
+          <span class="swatch" id="sw5"></span>
+          <span class="muted">High</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    /* ===== Helpers & Theme ===== */
+    const $ = (q, el=document)=> el.querySelector(q);
+    const $$ = (q, el=document)=> Array.from(el.querySelectorAll(q));
+    const toasts = $('.toasts');
+
+    const showToast = (msg, type='success')=>{
+      const t=document.createElement('div'); t.className=`toast ${type}`;
+      t.innerHTML=`<i class="fa-solid ${type==='danger'?'fa-circle-xmark':type==='warn'?'fa-triangle-exclamation':'fa-circle-check'}"></i><span>${msg}</span>`;
+      toasts.appendChild(t); setTimeout(()=>t.remove(),3000);
+    };
+
+    function setTheme(mode){
+      document.documentElement.removeAttribute('data-theme');
+      if(mode!=='auto') document.documentElement.setAttribute('data-theme', mode);
+      localStorage.setItem('analytics_theme', mode);
+      $('#lightBtn').classList.toggle('active', mode==='light');
+      $('#autoBtn').classList.toggle('active', mode==='auto');
+      $('#darkBtn').classList.toggle('active', mode==='dark');
+      // redraw after theme change
+      drawAll();
+      showToast(`Theme: ${mode}`);
+    }
+    $('#lightBtn').addEventListener('click', ()=>setTheme('light'));
+    $('#autoBtn').addEventListener('click', ()=>setTheme('auto'));
+    $('#darkBtn').addEventListener('click', ()=>setTheme('dark'));
+    setTheme(localStorage.getItem('analytics_theme')||'auto');
+
+    /* ===== Data (Alerts) ===== */
+    const STORE_KEY='safehostel_alerts_v1';
+    const demoAlerts = [
+      mkAlert('Motion','warning','Rear Corridor','PIR','Motion detected', -1),
+      mkAlert('Door','info','Main Gate','Reed','Gate opened', -2),
+      mkAlert('Fire','critical','Kitchen','Smoke','Smoke threshold exceeded', -3),
+      mkAlert('Panic','critical','Room 203','Button','Panic button pressed', -4),
+      mkAlert('Camera','warning','Lobby','Camera','Unknown face detected', -2)
+    ];
+    function mkAlert(type='Motion', sev='info', loc='Lobby', src='Sensor', msg='Event', daysOffset=0){
+      const d = new Date(); if(daysOffset) d.setDate(d.getDate()+daysOffset);
+      d.setMinutes(d.getMinutes()-Math.floor(Math.random()*720)); // within 12h
+      return {id:'AL-'+Math.random().toString(36).slice(2,8).toUpperCase(), time:+d, type, severity:sev, status: Math.random()<0.5?'new':'ack', location:loc, source:src, message:msg, snoozeUntil:0};
+    }
+    function loadAlerts(){
+      const s=localStorage.getItem(STORE_KEY);
+      return s? JSON.parse(s) : demoAlerts.slice();
+    }
+    function saveAlerts(a){ localStorage.setItem(STORE_KEY, JSON.stringify(a)); }
+    let alerts = loadAlerts();
+
+    /* ===== Filters state ===== */
+    const state = {
+      from: startOfToday(), to: endOfToday(),
+      type:'', sev:''
+    };
+    function startOfToday(){ const d=new Date(); d.setHours(0,0,0,0); return +d; }
+    function endOfToday(){ const d=new Date(); d.setHours(23,59,59,999); return +d; }
+
+    /* ===== Filter UI ===== */
+    function setRange(label, from, to){
+      state.from = from; state.to = to;
+      $('.rangeBtn.active')?.classList.remove('active');
+      $$(`.rangeBtn`).find(b=>b.dataset.range===label)?.classList.add('active');
+      $('#fromDate').value = new Date(from).toISOString().slice(0,10);
+      $('#toDate').value = new Date(to).toISOString().slice(0,10);
+      $('#rangeNote').textContent = `Showing: ${new Date(from).toLocaleDateString()} → ${new Date(to).toLocaleDateString()}`;
+      drawAll();
+    }
+    $$('.rangeBtn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const now = new Date();
+        if(btn.dataset.range==='today'){ setRange('today', startOfToday(), endOfToday()); }
+        if(btn.dataset.range==='7d'){ const to=endOfToday(); const from= to - 7*24*3600*1000 + 1; setRange('7d', from, to); }
+        if(btn.dataset.range==='30d'){ const to=endOfToday(); const from= to - 30*24*3600*1000 + 1; setRange('30d', from, to); }
+      });
+    });
+    $('#applyCustom').addEventListener('click', ()=>{
+      const f = new Date($('#fromDate').value); const t = new Date($('#toDate').value);
+      if(isNaN(+f) || isNaN(+t) || f>t){ showToast('Invalid date range','danger'); return; }
+      setRange('custom', +f, +t);
+    });
+    $('#clearFilters').addEventListener('click', ()=>{
+      $('#typeFilter').value=''; $('#sevFilter').value='';
+      state.type=''; state.sev=''; drawAll();
+    });
+    $('#typeFilter').addEventListener('change', ()=>{ state.type=$('#typeFilter').value; drawAll(); });
+    $('#sevFilter').addEventListener('change', ()=>{ state.sev=$('#sevFilter').value; drawAll(); });
+
+    // init date inputs
+    $('#fromDate').value = new Date(state.from).toISOString().slice(0,10);
+    $('#toDate').value = new Date(state.to).toISOString().slice(0,10);
+
+    /* ===== Derive dataset ===== */
+    function inRange(a){ return a.time>=state.from && a.time<=state.to; }
+    function applyFilters(arr){
+      return arr.filter(a=>{
+        if(!inRange(a)) return false;
+        if(state.type && a.type!==state.type) return false;
+        if(state.sev && a.severity!==state.sev) return false;
+        return true;
+      });
+    }
+
+    /* ===== Stats ===== */
+    function renderStats(rows){
+      const total = rows.length;
+      const critical = rows.filter(a=>a.severity==='critical').length;
+      const closed = rows.filter(a=>a.status!=='new').length;
+      const days = Math.max(1, Math.ceil((state.to - state.from)/(24*3600*1000)));
+      const avg = Math.round((total/days)*10)/10;
+      $('#statTotal').textContent = total;
+      $('#statCrit').textContent = critical;
+      $('#statClosed').textContent = closed;
+      $('#statAvg').textContent = avg;
+    }
+
+    /* ===== Canvas chart primitives (no external libs) ===== */
+    function clearCanvas(c){
+      const ctx = c.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      // upscale for crispness
+      c.style.width = c.width+'px'; c.style.height = c.height+'px';
+      c.width = c.width*dpr; c.height = c.height*dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.clearRect(0,0,c.width,c.height);
+      return ctx;
+    }
+    function colorVar(name, fallback){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback; }
+
+    function drawBar(canvas, labels, values){
+      const ctx = clearCanvas(canvas);
+      const w = canvas.width/(window.devicePixelRatio||1), h = canvas.height/(window.devicePixelRatio||1);
+      const pad=40, max=Math.max(1,...values);
+      const gap=(w-pad*2)/Math.max(1, values.length);
+      const bw=gap*0.6;
+      // axes
+      ctx.strokeStyle=colorVar('--border','#e2e8f0'); ctx.beginPath();
+      ctx.moveTo(pad,h-pad); ctx.lineTo(w-pad,h-pad); ctx.moveTo(pad,pad); ctx.lineTo(pad,h-pad); ctx.stroke();
+      // bars
+      const barCol = colorVar('--primary','#5d50c6');
+      const txt = colorVar('--text','#2d3748');
+      ctx.font='12px system-ui'; ctx.textAlign='center'; ctx.fillStyle=txt;
+      labels.forEach((lab,i)=>{
+        const x = pad + i*gap + (gap-bw)/2;
+        const hh = (values[i]/max)*(h-pad*2);
+        ctx.fillStyle=barCol; ctx.fillRect(x, h-pad-hh, bw, hh);
+        ctx.fillStyle=txt;
+        ctx.fillText(lab, x+bw/2, h-pad+14);
+        ctx.fillText(values[i], x+bw/2, h-pad-hh-6);
+      });
+    }
+
+    function drawPie(canvas, labels, values){
+      const ctx = clearCanvas(canvas);
+      const w = canvas.width/(window.devicePixelRatio||1), h = canvas.height/(window.devicePixelRatio||1);
+      const cx=w/2, cy=h/2, r=Math.min(w,h)/2 - 36;
+      const total = values.reduce((a,b)=>a+b,0) || 1;
+      const colors=[
+        colorVar('--secondary','#38a169'),
+        colorVar('--warning','#dd6b20'),
+        colorVar('--danger','#e53e3e'),
+        colorVar('--primary','#5d50c6'),
+        '#888'
+      ];
+      let start=-Math.PI/2;
+      const txt = colorVar('--text','#2d3748'); const border = colorVar('--border','#e2e8f0');
+      values.forEach((v,i)=>{
+        const ang=(v/total)*Math.PI*2;
+        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,start+ang); ctx.closePath();
+        ctx.fillStyle=colors[i%colors.length]; ctx.fill();
+        // outline
+        ctx.strokeStyle=border; ctx.stroke();
+        // label
+        const mid=start+ang/2; const lx=cx+Math.cos(mid)*(r+14), ly=cy+Math.sin(mid)*(r+14);
+        ctx.fillStyle=txt; ctx.font='12px system-ui'; ctx.textAlign='center';
+        ctx.fillText(`${labels[i]} (${v})`, lx, ly);
+        start+=ang;
+      });
+    }
+
+    function drawLine(canvas, labels, values){
+      const ctx = clearCanvas(canvas);
+      const w = canvas.width/(window.devicePixelRatio||1), h = canvas.height/(window.devicePixelRatio||1);
+      const pad=40, max=Math.max(1,...values);
+      const step=(w-pad*2)/Math.max(1, labels.length-1);
+      const border = colorVar('--border','#e2e8f0');
+      const prim = colorVar('--primary','#5d50c6'), txt = colorVar('--text','#2d3748');
+      // axes
+      ctx.strokeStyle=border; ctx.beginPath(); ctx.moveTo(pad,h-pad); ctx.lineTo(w-pad,h-pad); ctx.moveTo(pad,pad); ctx.lineTo(pad,h-pad); ctx.stroke();
+      // line
+      ctx.beginPath();
+      values.forEach((v,i)=>{
+        const x = pad + i*step;
+        const y = h - pad - (v/max)*(h - pad*2);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.strokeStyle=prim; ctx.lineWidth=2; ctx.stroke();
+      // points + labels
+      ctx.fillStyle=prim;
+      values.forEach((v,i)=>{
+        const x = pad + i*step;
+        const y = h - pad - (v/max)*(h - pad*2);
+        ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+      });
+      ctx.fillStyle=txt; ctx.font='12px system-ui'; ctx.textAlign='center';
+      labels.forEach((lab,i)=>{ if(labels.length<=24 || i%2===0) ctx.fillText(lab, pad + i*step, h-pad+14); });
+    }
+
+    function drawHeatmap(canvas, matrix, xLabels, yLabels){
+      const ctx = clearCanvas(canvas);
+      const w = canvas.width/(window.devicePixelRatio||1), h = canvas.height/(window.devicePixelRatio||1);
+      const padL=60, padB=30, padT=20, padR=20;
+      const rows = matrix.length, cols = matrix[0]?.length || 0;
+      const cw = (w - padL - padR) / cols;
+      const ch = (h - padT - padB) / rows;
+      const max = Math.max(1, ...matrix.flat());
+      const border = colorVar('--border','#e2e8f0'); const txt = colorVar('--text','#2d3748');
+      // scale colors from low->high using primary/danger mix
+      function cellColor(v){
+        const t = v/max;
+        const p = 93, pr = 80, pg = 0, pb = 198;   // primary approx
+        const dr = 229, dg = 62, db = 62;         // danger
+        const r = Math.round(pr*(1-t) + dr*t);
+        const g = Math.round(pg*(1-t) + dg*t);
+        const b = Math.round(pb*(1-t) + db*t);
+        return `rgb(${r},${g},${b})`;
+      }
+      // grid
+      for(let r=0;r<rows;r++){
+        for(let c=0;c<cols;c++){
+          const x = padL + c*cw, y = padT + r*ch;
+          ctx.fillStyle = cellColor(matrix[r][c]);
+          ctx.fillRect(x,y,cw,ch);
+          ctx.strokeStyle = border;
+          ctx.strokeRect(x,y,cw,ch);
+        }
+      }
+      // axes labels
+      ctx.fillStyle=txt; ctx.font='12px system-ui'; ctx.textAlign='center';
+      xLabels.forEach((lab,i)=> ctx.fillText(lab, padL + i*cw + cw/2, h - 6));
+      ctx.textAlign='right';
+      yLabels.forEach((lab,i)=> ctx.fillText(lab, padL - 6, padT + i*ch + ch/2 + 4));
+      // legend swatches
+      ['#sw1','#sw2','#sw3','#sw4','#sw5'].forEach((id,i)=>{
+        const t = i/4; const v = Math.round(max*t);
+        const el = $(id); if(el) el.style.background = cellColor(v);
+      });
+    }
+
+    /* ===== Analytics builders ===== */
+    function groupBy(arr, key){
+      const m = new Map();
+      arr.forEach(a=> m.set(a[key], (m.get(a[key])||0)+1));
+      return m;
+    }
+    function daysBetween(from,to){
+      const days=[]; const d=new Date(from); d.setHours(0,0,0,0);
+      const end = new Date(to); end.setHours(0,0,0,0);
+      while(d<=end){ days.push(d.toISOString().slice(0,10)); d.setDate(d.getDate()+1); }
+      return days;
+    }
+    function todayHour(a){ const d=new Date(a.time); return d.getHours(); }
+    function weekday(a){ return new Date(a.time).getDay(); } // 0-Sun..6-Sat
+
+    function buildAnalytics(rows){
+      // stats handled separately
+      // by type
+      const byType = groupBy(rows, 'type');
+      // by severity
+      const bySev = groupBy(rows, 'severity');
+      // trend per day
+      const byDay = new Map();
+      daysBetween(state.from, state.to).forEach(ds=> byDay.set(ds,0));
+      rows.forEach(a=> {
+        const ds = new Date(a.time).toISOString().slice(0,10);
+        if(byDay.has(ds)) byDay.set(ds, byDay.get(ds)+1);
+      });
+      // heatmap: weekday x hour
+      const heat = Array.from({length:7}, ()=> Array.from({length:24}, ()=>0));
+      rows.forEach(a=> { heat[weekday(a)][todayHour(a)]++; });
+      return {byType, bySev, byDay, heat};
+    }
+
+    /* ===== Draw all ===== */
+    function drawAll(){
+      alerts = loadAlerts(); // refresh from storage
+      let rows = applyFilters(alerts);
+      renderStats(rows);
+
+      const {byType, bySev, byDay, heat} = buildAnalytics(rows);
+
+      const tLabels = Array.from(byType.keys()); const tVals = Array.from(byType.values());
+      drawBar($('#chartType'), tLabels.length?tLabels:['None'], tLabels.length?tVals:[0]);
+
+      const sLabels = ['info','warning','critical']; const sVals = sLabels.map(k=> bySev.get(k)||0);
+      drawPie($('#chartSev'), ['Info','Warning','Critical'], sVals);
+
+      const dLabels = Array.from(byDay.keys()); const dVals = Array.from(byDay.values());
+      drawLine($('#chartTrend'), dLabels, dVals);
+
+      const hourLabels = Array.from({length:24}, (_,i)=> (i<10?`0${i}`:i)+':00');
+      const wdayLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      drawHeatmap($('#chartHeat'), heat, hourLabels, wdayLabels);
+    }
+
+    /* ===== CSV Import/Export ===== */
+    function toCSV(arr){
+      const cols=['id','time','type','severity','status','location','source','message','snoozeUntil'];
+      const head=cols.join(',');
+      const rows=arr.map(r=> cols.map(k=>{
+        let v=r[k]??''; if(typeof v==='string'){ const needs=/[,"\n]/.test(v); v=v.replace(/"/g,'""'); return needs?`"${v}"`:v; } return v;
+      }).join(',')).join('\n');
+      return head+'\n'+rows;
+    }
+    function download(filename, text){
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([text],{type:'text/csv'})); a.download=filename; a.click(); URL.revokeObjectURL(a.href);
+    }
+    $('#exportCsv').addEventListener('click', ()=> download('alerts.csv', toCSV(loadAlerts())));
+    $('#importCsv').addEventListener('click', ()=> $('#csvInput').click());
+    $('#csvInput').addEventListener('change', (e)=>{
+      const f=e.target.files[0]; if(!f) return;
+      const reader=new FileReader();
+      reader.onload=()=>{
+        try{
+          const lines = reader.result.split(/\r?\n/).filter(Boolean);
+          const head = lines.shift().split(',');
+          const idx=k=> head.indexOf(k);
+          const imported = lines.map(line=>{
+            const parts=[]; let cur='', q=false;
+            for(let i=0;i<line.length;i++){
+              const ch=line[i];
+              if(ch==='"'){ if(q && line[i+1]==='"'){ cur+='"'; i++; } else q=!q; }
+              else if(ch===',' && !q){ parts.push(cur); cur=''; }
+              else cur+=ch;
+            } parts.push(cur);
+            const g=k=> (parts[idx(k)]||'').replace(/^"|"$/g,'');
+            return {
+              id:g('id')||('AL-'+Math.random().toString(36).slice(2,8).toUpperCase()),
+              time:Number(g('time'))||Date.now(),
+              type:g('type')||'Motion',
+              severity:(g('severity')||'info').toLowerCase(),
+              status:(g('status')||'new').toLowerCase(),
+              location:g('location')||'',
+              source:g('source')||'Sensor',
+              message:g('message')||'',
+              snoozeUntil:Number(g('snoozeUntil'))||0
+            };
+          });
+          const map = new Map(loadAlerts().map(a=>[a.id,a]));
+          imported.forEach(a=> map.set(a.id, a));
+          saveAlerts(Array.from(map.values()));
+          showToast(`Imported ${imported.length} record(s)`,'success');
+          drawAll();
+        }catch(err){ console.error(err); showToast('Import failed','danger'); }
+        finally { e.target.value=''; }
+      };
+      reader.readAsText(f);
+    });
+
+    /* ===== Simulate alerts & Export PNGs ===== */
+    const TYPES = ['Motion','Door','Fire','Panic','Camera'];
+    const SEVS = ['info','warning','critical'];
+    const LOCS = ['Lobby','Rear Corridor','Kitchen','Main Gate','Room 203','Parking'];
+    const SOURCES = ['PIR','Reed','Smoke','Button','Camera','Controller'];
+
+    $('#simulate').addEventListener('click', ()=>{
+      const base = loadAlerts();
+      for(let i=0;i<10;i++){
+        base.push(mkAlert(
+          TYPES[Math.floor(Math.random()*TYPES.length)],
+          SEVS[Math.floor(Math.random()*SEVS.length)],
+          LOCS[Math.floor(Math.random()*LOCS.length)],
+          SOURCES[Math.floor(Math.random()*SOURCES.length)],
+          'Simulated event',
+          -Math.floor(Math.random()*14) // within 2 weeks
+        ));
+      }
+      saveAlerts(base);
+      showToast('Added 10 simulated alerts','warn');
+      drawAll();
+    });
+
+    $('#exportPNGs').addEventListener('click', ()=>{
+      ['chartType','chartSev','chartTrend','chartHeat'].forEach(id=>{
+        const c = $('#'+id);
+        const link = document.createElement('a');
+        link.download = id + '.png';
+        link.href = c.toDataURL('image/png');
+        link.click();
+      });
+      showToast('Charts exported as PNG');
+    });
+
+    /* ===== Init ===== */
+    function init(){
+      // default: Today
+      setRange('today', state.from, state.to);
+    }
+    init();
+    window.addEventListener('resize', drawAll);
+  </script>
+</body>
+</html>

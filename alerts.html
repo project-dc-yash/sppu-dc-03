@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SafeHostel | Alerts</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    :root{
+      --primary:#5d50c6; --secondary:#38a169; --danger:#e53e3e; --warning:#dd6b20;
+      --bg:#f7f7f7; --card:#ffffff; --text:#2d3748; --muted:#718096; --border:#e2e8f0; --ring:rgba(93,80,198,.35); --chip:#edf2f7;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#0f1220; --card:#151a2e; --text:#e6eaf3; --muted:#9aa3b2; --border:#232a45; --chip:#0f142c; --ring:rgba(93,80,198,.5); }
+    }
+    [data-theme="light"]{ --bg:#f7f7f7; --card:#fff; --text:#2d3748; --muted:#718096; --border:#e2e8f0; --chip:#edf2f7; --ring:rgba(93,80,198,.35); }
+    [data-theme="dark"]{ --bg:#0f1220; --card:#151a2e; --text:#e6eaf3; --muted:#9aa3b2; --border:#232a45; --chip:#0f142c; --ring:rgba(93,80,198,.5); }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text)}
+    .hidden{display:none !important}
+    :focus-visible{outline:2px solid var(--ring); outline-offset:2px; border-radius:8px}
+
+    /* Header */
+    header{position:sticky; top:0; z-index:20; background:var(--card); border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 20px;}
+    .brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px; color:var(--primary)}
+    .actions{display:flex; align-items:center; gap:10px}
+    .seg{display:inline-flex; border:1px solid var(--border); border-radius:12px; overflow:hidden}
+    .seg button{border:none; background:transparent; color:var(--text); padding:8px 12px; cursor:pointer}
+    .seg .active{background:var(--primary); color:#fff}
+
+    /* Buttons / chips */
+    .btn{border:1px solid var(--border); background:transparent; color:var(--text); padding:8px 12px; border-radius:10px; cursor:pointer}
+    .btn:hover{filter:brightness(.96)} .btn:active{transform:translateY(1px)}
+    .btn.primary{background:var(--primary); color:#fff; border-color:transparent}
+    .btn.success{background:var(--secondary); color:#fff; border-color:transparent}
+    .btn.warn{background:var(--warning); color:#fff; border-color:transparent}
+    .btn.danger{background:var(--danger); color:#fff; border-color:transparent}
+    .btn.min{padding:6px 10px; font-size:13px}
+    .chip{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; font-size:12px; background:var(--chip); color:var(--muted); border:1px solid var(--border)}
+
+    /* Layout */
+    main{padding:20px; max-width:1300px; margin:0 auto}
+    h1{margin:0; color:var(--primary)}
+    .muted{color:var(--muted)}
+    .row{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px}
+    .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; box-shadow:0 8px 24px rgba(0,0,0,.06)}
+    .grid{display:grid; grid-template-columns: 1fr 360px; gap:18px}
+    @media (max-width: 1100px){ .grid{grid-template-columns:1fr} }
+
+    /* Filters + table */
+    .filters{display:flex; flex-wrap:wrap; gap:10px; margin:14px 0}
+    .input, select{padding:10px 12px; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:10px}
+    .input{min-width:220px}
+    table{width:100%; border-collapse:collapse; font-size:14px}
+    thead th{position:sticky; top:0; background:var(--card); border-bottom:1px solid var(--border); text-align:left; padding:10px; user-select:none; cursor:pointer}
+    tbody td{border-top:1px solid var(--border); padding:10px; vertical-align:top}
+    tbody tr:hover{background:rgba(0,0,0,.03)}
+    .sev{display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid var(--border)}
+    .sev.critical{color:#fff; background:var(--danger); border-color:transparent}
+    .sev.warning{color:#fff; background:var(--warning); border-color:transparent}
+    .sev.info{background:var(--chip); color:var(--muted)}
+    .status{font-weight:700}
+    .status.new{color:var(--danger)}
+    .status.ack{color:var(--warning)}
+    .status.res{color:var(--secondary)}
+    .table-actions{display:flex; gap:6px; flex-wrap:wrap}
+
+    /* Pager */
+    .pager{display:flex; align-items:center; gap:8px; justify-content:flex-end; margin-top:12px}
+    .pager .btn[disabled]{opacity:.5; cursor:not-allowed}
+
+    /* Activity log */
+    .log{max-height:420px; overflow:auto; border-radius:12px; border:1px solid var(--border)}
+    .status-dot{width:8px; height:8px; border-radius:999px; display:inline-block}
+    .dot-green{background:var(--secondary)} .dot-red{background:var(--danger)} .dot-orange{background:var(--warning)}
+
+    /* Toasts */
+    .toasts{position:fixed; right:16px; top:16px; display:flex; flex-direction:column; gap:10px; z-index:70}
+    .toast{background:var(--card); border:1px solid var(--border); padding:10px 14px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.25); display:flex; align-items:center; gap:10px; min-width:260px}
+    .toast.success{border-left:5px solid var(--secondary)} .toast.warn{border-left:5px solid var(--warning)} .toast.danger{border-left:5px solid var(--danger)}
+  </style>
+</head>
+<body>
+  <div class="toasts" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <header>
+    <div class="brand"><i class="fa-solid fa-bell"></i><span>SafeHostel • Alerts</span></div>
+    <div class="actions">
+      <div class="seg" role="group" aria-label="Theme">
+        <button id="lightBtn">Light</button>
+        <button id="autoBtn" class="active">Auto</button>
+        <button id="darkBtn">Dark</button>
+      </div>
+      <button class="btn" id="exportCsv"><i class="fa-solid fa-file-export"></i> Export CSV</button>
+      <button class="btn" id="importCsv"><i class="fa-solid fa-file-import"></i> Import CSV</button>
+      <button class="btn primary" id="simulate"><i class="fa-solid fa-flask"></i> Simulate Alert</button>
+      <input type="file" id="csvInput" accept=".csv" class="hidden"/>
+    </div>
+  </header>
+
+  <main>
+    <div class="row">
+      <div>
+        <h1>Alerts</h1>
+        <div class="muted">Live feed of security events. Demo uses localStorage.</div>
+      </div>
+      <div class="chip"><i class="fa-solid fa-database"></i> Local dataset</div>
+    </div>
+
+    <div class="grid">
+      <!-- Alerts table -->
+      <section class="card">
+        <!-- Filters -->
+        <div class="filters">
+          <input id="qSearch" class="input" type="search" placeholder="Search message, location, source…"/>
+          <select id="sevFilter">
+            <option value="">All Severity</option>
+            <option value="critical">Critical</option>
+            <option value="warning">Warning</option>
+            <option value="info">Info</option>
+          </select>
+          <select id="statusFilter">
+            <option value="">All Status</option>
+            <option value="new">New</option>
+            <option value="ack">Acknowledged</option>
+            <option value="res">Resolved</option>
+          </select>
+          <select id="typeFilter">
+            <option value="">All Types</option>
+            <option>Motion</option><option>Door</option><option>Fire</option><option>Panic</option><option>Camera</option>
+          </select>
+          <input id="locFilter" class="input" placeholder="Location e.g., Rear Corridor" style="max-width:200px"/>
+          <button class="btn" id="clearFilters"><i class="fa-solid fa-filter-circle-xmark"></i> Clear</button>
+
+          <div style="margin-left:auto; display:flex; gap:8px">
+            <button class="btn success" id="bulkAck"><i class="fa-regular fa-bell"></i> Acknowledge</button>
+            <button class="btn warn" id="bulkRes"><i class="fa-regular fa-circle-check"></i> Resolve</button>
+            <button class="btn" id="bulkSnooze"><i class="fa-regular fa-clock"></i> Snooze 10m</button>
+            <button class="btn danger" id="bulkDel"><i class="fa-regular fa-trash-can"></i> Delete</button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div style="overflow:auto; border:1px solid var(--border); border-radius:12px">
+          <table aria-label="Alerts table">
+            <thead>
+              <tr>
+                <th style="width:36px"><input type="checkbox" id="checkAll"/></th>
+                <th data-sort="time">Time</th>
+                <th data-sort="type">Type</th>
+                <th data-sort="severity">Severity</th>
+                <th data-sort="status">Status</th>
+                <th data-sort="location">Location</th>
+                <th data-sort="source">Source</th>
+                <th>Message</th>
+                <th style="width:260px">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Pager -->
+        <div class="pager">
+          <span class="muted" id="pageInfo">0–0 of 0</span>
+          <select id="pageSize"><option>10</option><option>25</option><option>50</option></select>
+          <button class="btn" id="prevPg"><i class="fa-solid fa-chevron-left"></i></button>
+          <button class="btn" id="nextPg"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+      </section>
+
+      <!-- Activity log -->
+      <aside>
+        <section class="card">
+          <h3 style="margin:0 0 8px">Activity Log</h3>
+          <div class="muted" style="margin-bottom:8px">Recent actions on alerts.</div>
+          <div class="log">
+            <table>
+              <thead>
+                <tr><th style="width:110px">Time</th><th style="width:90px">User</th><th>Event</th><th style="width:18px"></th></tr>
+              </thead>
+              <tbody id="logBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    /* ======= Helpers & Theme ======= */
+    const $ = (q, el=document)=> el.querySelector(q);
+    const $$ = (q, el=document)=> Array.from(el.querySelectorAll(q));
+    const toasts = $('.toasts');
+
+    const showToast = (msg, type='success')=>{
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.innerHTML = `<i class="fa-solid ${type==='danger'?'fa-circle-xmark':type==='warn'?'fa-triangle-exclamation':'fa-circle-check'}"></i><span>${msg}</span>`;
+      toasts.appendChild(t); setTimeout(()=>t.remove(), 3000);
+    };
+    const fmtTime = (d=new Date())=>{
+      const p=n=>String(n).padStart(2,'0'); return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+    };
+    const fmtDateTime = (ms)=> new Date(ms).toLocaleString();
+
+    const setTheme = (mode)=>{
+      document.documentElement.removeAttribute('data-theme');
+      if(mode!=='auto') document.documentElement.setAttribute('data-theme', mode);
+      localStorage.setItem('alerts_theme', mode);
+      $('#lightBtn').classList.toggle('active', mode==='light');
+      $('#autoBtn').classList.toggle('active', mode==='auto');
+      $('#darkBtn').classList.toggle('active', mode==='dark');
+      showToast(`Theme: ${mode}`,'success');
+    };
+    $('#lightBtn').addEventListener('click', ()=> setTheme('light'));
+    $('#autoBtn').addEventListener('click', ()=> setTheme('auto'));
+    $('#darkBtn').addEventListener('click', ()=> setTheme('dark'));
+    setTheme(localStorage.getItem('alerts_theme') || 'auto');
+
+    /* ======= Data Model ======= */
+    const STORE_KEY='safehostel_alerts_v1';
+    const LOG_KEY='safehostel_alerts_log_v1';
+
+    const demoAlerts = [
+      mkAlert('Motion','warning','Rear Corridor','PIR','Motion detected'),
+      mkAlert('Door','info','Main Gate','Reed','Gate opened'),
+      mkAlert('Fire','critical','Kitchen','Smoke','Smoke threshold exceeded'),
+      mkAlert('Panic','critical','Room 203','Button','Panic button pressed'),
+      mkAlert('Camera','warning','Lobby','Camera','Unknown face detected')
+    ];
+    function mkAlert(type='Motion', severity='info', location='Lobby', source='Sensor', message='Event'){
+      return {
+        id:'AL-' + Math.random().toString(36).slice(2,8).toUpperCase(),
+        time: Date.now() - Math.floor(Math.random()*6*24*3600*1000), // within ~6 days
+        type, severity, status:'new', location, source, message,
+        snoozeUntil: 0
+      };
+    }
+    function loadAlerts(){
+      const s = localStorage.getItem(STORE_KEY);
+      return s ? JSON.parse(s) : demoAlerts.slice().sort((a,b)=>b.time-a.time);
+    }
+    function saveAlerts(a){ localStorage.setItem(STORE_KEY, JSON.stringify(a)); }
+
+    function loadLog(){ return JSON.parse(localStorage.getItem(LOG_KEY)||'[]'); }
+    function saveLog(l){ localStorage.setItem(LOG_KEY, JSON.stringify(l)); }
+    function addLog(user, event, level='ok'){
+      const l = loadLog(); l.push({time:fmtTime(new Date()), user, event, level});
+      if(l.length>200) l.shift(); saveLog(l); renderLog();
+    }
+
+    let alerts = loadAlerts();
+
+    /* ======= Alerts UI State ======= */
+    const state = {
+      q:'', sev:'', stat:'', type:'', loc:'',
+      sort: {key:'time', dir:'desc'},
+      page:1, pageSize: Number(localStorage.getItem('alerts_pageSize')||10)
+    };
+
+    /* ======= DOM Refs ======= */
+    const tbody = $('#tbody'), logBody = $('#logBody');
+    const qSearch = $('#qSearch'), sevFilter = $('#sevFilter'), statusFilter = $('#statusFilter'), typeFilter = $('#typeFilter'), locFilter = $('#locFilter');
+    const checkAll = $('#checkAll'), pageInfo = $('#pageInfo'), pageSize = $('#pageSize'), prevPg=$('#prevPg'), nextPg=$('#nextPg');
+
+    /* ======= Filters & Sorting ======= */
+    function normalized(s){ return (s||'').toString().toLowerCase().trim(); }
+    function applyFilters(){
+      return alerts.filter(a=>{
+        const hit = normalized(a.message).includes(state.q) || normalized(a.location).includes(state.q) || normalized(a.source).includes(state.q);
+        const s1 = !state.sev || a.severity===state.sev;
+        const s2 = !state.stat || a.status===state.stat;
+        const s3 = !state.type || a.type===state.type;
+        const s4 = !state.loc || normalized(a.location).includes(normalized(state.loc));
+        return hit && s1 && s2 && s3 && s4;
+      }).sort((a,b)=>{
+        const {key, dir} = state.sort;
+        let va=a[key], vb=b[key], cmp=0;
+        if(key==='time'){ cmp=(va||0)-(vb||0); }
+        else{ cmp=String(va).localeCompare(String(vb), undefined, {numeric:true}); }
+        return dir==='asc'?cmp:-cmp;
+      });
+    }
+    function pageSlice(rows){
+      const total=rows.length, sz=state.pageSize, pages=Math.max(1, Math.ceil(total/sz));
+      state.page=Math.min(state.page,pages);
+      const start=(state.page-1)*sz, end=Math.min(start+sz, total);
+      return {rows:rows.slice(start,end), start, end, total, pages};
+    }
+
+    /* ======= Rendering ======= */
+    function renderTable(){
+      const rows = pageSlice(applyFilters());
+      tbody.innerHTML = rows.rows.map(a=>{
+        const sevClass = `sev ${a.severity}`;
+        const statClass = `status ${a.status==='new'?'new':a.status==='ack'?'ack':'res'}`;
+        const snoozed = a.snoozeUntil && a.snoozeUntil>Date.now() ? `<span class="chip"><i class="fa-regular fa-clock"></i> Snoozed</span>` : '';
+        return `<tr data-id="${a.id}">
+          <td><input type="checkbox" class="rowCheck"/></td>
+          <td>${fmtDateTime(a.time)}</td>
+          <td>${a.type}</td>
+          <td><span class="${sevClass}">${a.severity.toUpperCase()}</span></td>
+          <td><span class="${statClass}">${a.status.toUpperCase()}</span> ${snoozed}</td>
+          <td>${a.location}</td>
+          <td>${a.source}</td>
+          <td>${a.message}</td>
+          <td>
+            <div class="table-actions">
+              <button class="btn min" data-act="ack"><i class="fa-regular fa-bell"></i> Ack</button>
+              <button class="btn min warn" data-act="resolve"><i class="fa-regular fa-circle-check"></i> Resolve</button>
+              <button class="btn min" data-act="snooze"><i class="fa-regular fa-clock"></i> Snooze 10m</button>
+              <button class="btn min danger" data-act="del"><i class="fa-regular fa-trash-can"></i> Delete</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+      pageInfo.textContent = `${rows.total?rows.start+1:0}–${rows.end} of ${rows.total}`;
+      prevPg.disabled = state.page<=1; nextPg.disabled = state.page>=rows.pages;
+      pageSize.value = String(state.pageSize);
+      checkAll.checked=false;
+    }
+    function renderLog(){
+      const l = loadLog().slice().reverse();
+      logBody.innerHTML = l.map(x=>{
+        const dot = x.level==='ok'?'dot-green':x.level==='warn'?'dot-orange':'dot-red';
+        return `<tr><td>${x.time}</td><td>${x.user}</td><td>${x.event}</td><td><span class="status-dot ${dot}"></span></td></tr>`;
+      }).join('');
+    }
+    function renderAll(){ renderTable(); renderLog(); }
+
+    /* ======= Sorting headers ======= */
+    $$('thead th[data-sort]').forEach(th=>{
+      th.addEventListener('click', ()=>{
+        const key = th.getAttribute('data-sort');
+        if(state.sort.key===key){ state.sort.dir = state.sort.dir==='asc'?'desc':'asc'; }
+        else{ state.sort.key=key; state.sort.dir='asc'; }
+        renderTable();
+      });
+    });
+
+    /* ======= Filter events ======= */
+    qSearch.addEventListener('input', ()=>{ state.q=normalized(qSearch.value); state.page=1; renderTable(); });
+    sevFilter.addEventListener('change', ()=>{ state.sev=sevFilter.value; state.page=1; renderTable(); });
+    statusFilter.addEventListener('change', ()=>{ state.stat=statusFilter.value; state.page=1; renderTable(); });
+    typeFilter.addEventListener('change', ()=>{ state.type=typeFilter.value; state.page=1; renderTable(); });
+    locFilter.addEventListener('input', ()=>{ state.loc=locFilter.value; state.page=1; renderTable(); });
+    $('#clearFilters').addEventListener('click', ()=>{
+      qSearch.value=''; sevFilter.value=''; statusFilter.value=''; typeFilter.value=''; locFilter.value='';
+      state.q=''; state.sev=''; state.stat=''; state.type=''; state.loc=''; state.page=1; renderTable();
+    });
+
+    /* ======= Pager ======= */
+    pageSize.addEventListener('change', ()=>{ state.pageSize=Number(pageSize.value); localStorage.setItem('alerts_pageSize', state.pageSize); state.page=1; renderTable(); });
+    prevPg.addEventListener('click', ()=>{ state.page=Math.max(1,state.page-1); renderTable(); });
+    nextPg.addEventListener('click', ()=>{ state.page=state.page+1; renderTable(); });
+
+    /* ======= Row + Bulk Actions ======= */
+    function getSelIds(){
+      return $$('.rowCheck', tbody).map(cb=>({cb, tr:cb.closest('tr')})).filter(x=>x.cb.checked).map(x=>x.tr.getAttribute('data-id'));
+    }
+    function setStatus(id, status){
+      const a = alerts.find(x=>x.id===id); if(!a) return;
+      a.status = status; if(status!=='ack') a.snoozeUntil = 0;
+    }
+    function snooze(id, ms=600000){
+      const a = alerts.find(x=>x.id===id); if(!a) return; a.snoozeUntil=Date.now()+ms; a.status='ack';
+    }
+    function removeAlert(id){ alerts = alerts.filter(x=>x.id!==id); }
+
+    tbody.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button[data-act]'); if(!btn) return;
+      const tr = btn.closest('tr'); const id = tr.getAttribute('data-id'); const act = btn.dataset.act;
+      if(act==='ack'){ setStatus(id,'ack'); addLog('warden','Alert acknowledged','ok'); showToast('Acknowledged','success'); }
+      if(act==='resolve'){ setStatus(id,'res'); addLog('warden','Alert resolved','ok'); showToast('Resolved','success'); }
+      if(act==='snooze'){ snooze(id); addLog('warden','Alert snoozed 10m','warn'); showToast('Snoozed 10 minutes','warn'); }
+      if(act==='del'){ removeAlert(id); addLog('warden','Alert deleted','danger'); showToast('Deleted','danger'); }
+      saveAlerts(alerts); renderAll();
+    });
+
+    $('#bulkAck').addEventListener('click', ()=>{
+      const ids=getSelIds(); ids.forEach(id=>setStatus(id,'ack')); saveAlerts(alerts); renderAll();
+      if(ids.length) addLog('warden',`Bulk ack (${ids.length})`,'ok');
+    });
+    $('#bulkRes').addEventListener('click', ()=>{
+      const ids=getSelIds(); ids.forEach(id=>setStatus(id,'res')); saveAlerts(alerts); renderAll();
+      if(ids.length) addLog('warden',`Bulk resolve (${ids.length})`,'ok');
+    });
+    $('#bulkSnooze').addEventListener('click', ()=>{
+      const ids=getSelIds(); ids.forEach(id=>snooze(id)); saveAlerts(alerts); renderAll();
+      if(ids.length) addLog('warden',`Bulk snooze (${ids.length})`,'warn');
+    });
+    $('#bulkDel').addEventListener('click', ()=>{
+      const ids=getSelIds(); if(!ids.length) return;
+      if(!confirm(`Delete ${ids.length} alert(s)?`)) return;
+      ids.forEach(id=>removeAlert(id)); saveAlerts(alerts); renderAll();
+      addLog('warden',`Bulk delete (${ids.length})`,'danger');
+    });
+
+    checkAll.addEventListener('change', ()=>{ $$('.rowCheck', tbody).forEach(cb=> cb.checked=checkAll.checked); });
+
+    /* ======= CSV Import / Export ======= */
+    function toCSV(arr){
+      const cols=['id','time','type','severity','status','location','source','message','snoozeUntil'];
+      const head=cols.join(',');
+      const rows=arr.map(r=> cols.map(k=>{
+        let v=r[k]??''; if(typeof v==='string'){ const needs=/[,"\n]/.test(v); v=v.replace(/"/g,'""'); return needs?`"${v}"`:v; } return v;
+      }).join(',')).join('\n');
+      return head+'\n'+rows;
+    }
+    function download(filename, text){
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([text],{type:'text/csv'})); a.download=filename; a.click(); URL.revokeObjectURL(a.href);
+    }
+    $('#exportCsv').addEventListener('click', ()=> download('alerts.csv', toCSV(alerts)));
+    $('#importCsv').addEventListener('click', ()=> $('#csvInput').click());
+    $('#csvInput').addEventListener('change', (e)=>{
+      const f=e.target.files[0]; if(!f) return;
+      const reader=new FileReader();
+      reader.onload=()=>{
+        try{
+          const lines = reader.result.split(/\r?\n/).filter(Boolean);
+          const head = lines.shift().split(',');
+          const idx=k=> head.indexOf(k);
+          const imported = lines.map(line=>{
+            const parts=[]; let cur='', q=false;
+            for(let i=0;i<line.length;i++){
+              const ch=line[i];
+              if(ch==='"'){ if(q && line[i+1]==='"'){ cur+='"'; i++; } else q=!q; }
+              else if(ch===',' && !q){ parts.push(cur); cur=''; }
+              else cur+=ch;
+            } parts.push(cur);
+            const g=k=> (parts[idx(k)]||'').replace(/^"|"$/g,'');
+            return {
+              id:g('id')||('AL-'+Math.random().toString(36).slice(2,8).toUpperCase()),
+              time:Number(g('time'))||Date.now(),
+              type:g('type')||'Motion',
+              severity:(g('severity')||'info').toLowerCase(),
+              status:(g('status')||'new').toLowerCase(),
+              location:g('location')||'',
+              source:g('source')||'Sensor',
+              message:g('message')||'',
+              snoozeUntil:Number(g('snoozeUntil'))||0
+            };
+          });
+          // merge by id
+          const map = new Map(alerts.map(a=>[a.id,a]));
+          imported.forEach(a=> map.set(a.id, a));
+          alerts = Array.from(map.values()).sort((a,b)=>b.time-a.time);
+          saveAlerts(alerts); renderAll(); showToast(`Imported ${imported.length} record(s)`,'success');
+        } catch(err){ console.error(err); showToast('Import failed','danger'); }
+        finally { e.target.value=''; }
+      };
+      reader.readAsText(f);
+    });
+s
+    /* ======= Simulator ======= */
+    const TYPES = ['Motion','Door','Fire','Panic','Camera'];
+    const SEVS = ['info','warning','critical'];
+    const LOCS = ['Lobby','Rear Corridor','Kitchen','Main Gate','Room 203','Parking'];
+    const SOURCES = ['PIR','Reed','Smoke','Button','Camera','Controller'];
+
+    $('#simulate').addEventListener('click', ()=>{
+      const a = mkAlert(
+        TYPES[Math.floor(Math.random()*TYPES.length)],
+        SEVS[Math.floor(Math.random()*SEVS.length)],
+        LOCS[Math.floor(Math.random()*LOCS.length)],
+        SOURCES[Math.floor(Math.random()*SOURCES.length)],
+        'Simulated event'
+      );
+      alerts.unshift(a); saveAlerts(alerts); renderAll();
+      addLog('system','Simulated alert created','warn');
+      showToast(`Simulated: ${a.type} (${a.severity})`,'warn');
+    });
+
+    /* ======= Init ======= */
+    function renderLog(){
+      const l = loadLog().slice().reverse();
+      logBody.innerHTML = l.map(x=>{
+        const dot = x.level==='ok'?'dot-green':x.level==='warn'?'dot-orange':'dot-red';
+        return `<tr><td>${x.time}</td><td>${x.user}</td><td>${x.event}</td><td><span class="status-dot ${dot}"></span></td></tr>`;
+      }).join('');
+    }
+    function bootstrap(){
+      if(alerts.length===0){ alerts = demoAlerts.slice(); saveAlerts(alerts); }
+      renderAll();
+      if(loadLog().length===0){ addLog('system','Alerts page opened','ok'); }
+    }
+    bootstrap();
+  </script>
+</body>
+</html>

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SafeHostel | Residents</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    :root{
+      --primary:#5d50c6; --secondary:#38a169; --danger:#e53e3e; --warning:#dd6b20;
+      --bg:#f7f7f7; --card:#ffffff; --text:#2d3748; --muted:#718096; --border:#e2e8f0; --ring:rgba(93,80,198,.35); --chip:#edf2f7;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#0f1220; --card:#151a2e; --text:#e6eaf3; --muted:#9aa3b2; --border:#232a45; --chip:#0f142c; --ring:rgba(93,80,198,.5); }
+    }
+    [data-theme="light"]{ --bg:#f7f7f7; --card:#fff; --text:#2d3748; --muted:#718096; --border:#e2e8f0; --chip:#edf2f7; --ring:rgba(93,80,198,.35); }
+    [data-theme="dark"]{ --bg:#0f1220; --card:#151a2e; --text:#e6eaf3; --muted:#9aa3b2; --border:#232a45; --chip:#0f142c; --ring:rgba(93,80,198,.5); }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text)}
+    .hidden{display:none !important}
+    :focus-visible{outline:2px solid var(--ring); outline-offset:2px; border-radius:8px}
+
+    /* Header */
+    header{position:sticky; top:0; z-index:20; background:var(--card); border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 20px;}
+    .brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px; color:var(--primary)}
+    .actions{display:flex; align-items:center; gap:10px}
+    .seg{display:inline-flex; border:1px solid var(--border); border-radius:12px; overflow:hidden}
+    .seg button{border:none; background:transparent; color:var(--text); padding:8px 12px; cursor:pointer}
+    .seg .active{background:var(--primary); color:#fff}
+
+    /* Buttons / chips */
+    .btn{border:1px solid var(--border); background:transparent; color:var(--text); padding:8px 12px; border-radius:10px; cursor:pointer}
+    .btn:hover{filter:brightness(.96)} .btn:active{transform:translateY(1px)}
+    .btn.primary{background:var(--primary); color:#fff; border-color:transparent}
+    .btn.success{background:var(--secondary); color:#fff; border-color:transparent}
+    .btn.warn{background:var(--warning); color:#fff; border-color:transparent}
+    .btn.danger{background:var(--danger); color:#fff; border-color:transparent}
+    .btn.min{padding:6px 10px; font-size:13px}
+    .chip{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; font-size:12px; background:var(--chip); color:var(--muted); border:1px solid var(--border)}
+
+    /* Layout */
+    main{padding:20px; max-width:1300px; margin:0 auto}
+    h1{margin:0; color:var(--primary)}
+    .muted{color:var(--muted)}
+    .top-row{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px}
+
+    /* Stats */
+    .stats{display:grid; grid-template-columns:repeat(4, minmax(180px,1fr)); gap:14px; margin-top:12px}
+    .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; box-shadow:0 8px 24px rgba(0,0,0,.06)}
+    .card h3{margin:0 0 6px; font-size:14px; color:var(--muted)}
+    .big{font-size:28px; font-weight:800; display:flex; align-items:center; gap:8px}
+
+    /* Filters */
+    .filters{display:flex; flex-wrap:wrap; gap:10px; margin:14px 0}
+    .input, select{padding:10px 12px; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:10px}
+    .input{min-width:240px}
+
+    /* Table */
+    .table-card{margin-top:10px}
+    table{width:100%; border-collapse:collapse; font-size:14px}
+    thead th{position:sticky; top:0; background:var(--card); border-bottom:1px solid var(--border); text-align:left; padding:10px; user-select:none; cursor:pointer}
+    tbody td{border-top:1px solid var(--border); padding:10px}
+    tbody tr:hover{background:rgba(0,0,0,.03)}
+    .status.in{color:var(--secondary); font-weight:700}
+    .status.out{color:var(--danger); font-weight:700}
+    .table-actions{display:flex; gap:6px; flex-wrap:wrap}
+
+    /* Pagination */
+    .pager{display:flex; align-items:center; gap:8px; justify-content:flex-end; margin-top:12px}
+    .pager .btn[disabled]{opacity:.5; cursor:not-allowed}
+
+    /* Right: Log (stack) */
+    .grid{display:grid; grid-template-columns: 1fr 360px; gap:18px}
+    @media (max-width: 1100px){ .grid{grid-template-columns:1fr} }
+
+    .log{max-height:420px; overflow:auto; border-radius:12px; border:1px solid var(--border)}
+    thead .th-sm{width:120px}
+    .status-dot{width:8px; height:8px; border-radius:999px; display:inline-block}
+    .dot-green{background:var(--secondary)} .dot-red{background:var(--danger)} .dot-orange{background:var(--warning)}
+
+    /* Modal */
+    .modal{position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; z-index:60}
+    .modal .panel{background:var(--card); border:1px solid var(--border); width:min(560px, 92vw); border-radius:14px; padding:16px}
+    .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    .row > div{display:flex; flex-direction:column; gap:6px}
+    .panel h2{margin:4px 0 10px}
+    .panel label{font-size:13px; color:var(--muted)}
+    .panel input, .panel select{padding:10px 12px; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:10px}
+    .panel .footer{display:flex; justify-content:flex-end; gap:8px; margin-top:12px}
+
+    /* Toasts */
+    .toasts{position:fixed; right:16px; top:16px; display:flex; flex-direction:column; gap:10px; z-index:70}
+    .toast{background:var(--card); border:1px solid var(--border); padding:10px 14px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.25); display:flex; align-items:center; gap:10px; min-width:260px}
+    .toast.success{border-left:5px solid var(--secondary)} .toast.warn{border-left:5px solid var(--warning)} .toast.danger{border-left:5px solid var(--danger)}
+  </style>
+</head>
+<body>
+  <div class="toasts" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <header>
+    <div class="brand"><i class="fa-solid fa-users"></i><span>SafeHostel • Residents</span></div>
+    <div class="actions">
+      <div class="seg" role="group" aria-label="Theme">
+        <button id="lightBtn">Light</button>
+        <button id="autoBtn" class="active">Auto</button>
+        <button id="darkBtn">Dark</button>
+      </div>
+      <button class="btn" id="importCsv"><i class="fa-solid fa-file-import"></i> Import CSV</button>
+      <button class="btn" id="exportCsv"><i class="fa-solid fa-file-export"></i> Export CSV</button>
+      <button class="btn primary" id="addResident"><i class="fa-solid fa-user-plus"></i> Add Resident</button>
+      <input type="file" id="csvInput" accept=".csv" class="hidden" />
+    </div>
+  </header>
+
+  <main>
+    <div class="top-row">
+      <div>
+        <h1>Residents</h1>
+        <div class="muted">Manage entries, status, rooms, and records. Demo uses localStorage.</div>
+      </div>
+      <div class="chip"><i class="fa-solid fa-database"></i> <span id="datasetInfo">Local dataset</span></div>
+    </div>
+
+    <!-- Stats -->
+    <section class="stats">
+      <div class="card"><h3>Total Residents</h3><div class="big"><i class="fa-solid fa-users"></i><span id="statTotal">0</span></div></div>
+      <div class="card"><h3>Checked In</h3><div class="big"><i class="fa-solid fa-door-open"></i><span id="statIn">0</span></div></div>
+      <div class="card"><h3>Checked Out</h3><div class="big"><i class="fa-solid fa-door-closed"></i><span id="statOut">0</span></div></div>
+      <div class="card"><h3>Occupancy %</h3><div class="big"><i class="fa-solid fa-chart-line"></i><span id="statOcc">0%</span></div></div>
+    </section>
+
+    <div class="grid">
+      <!-- Left: Table -->
+      <section class="card table-card">
+        <!-- Filters -->
+        <div class="filters">
+          <input id="searchBox" class="input" type="search" placeholder="Search name, ID, phone…" />
+          <select id="statusFilter">
+            <option value="">All Status</option>
+            <option value="in">In</option>
+            <option value="out">Out</option>
+          </select>
+          <select id="blockFilter">
+            <option value="">All Blocks</option>
+            <option>A</option><option>B</option><option>C</option><option>D</option>
+          </select>
+          <input id="roomFilter" class="input" type="text" placeholder="Room (e.g., 203)" style="max-width:140px"/>
+          <button class="btn" id="clearFilters"><i class="fa-solid fa-filter-circle-xmark"></i> Clear</button>
+          <div style="margin-left:auto; display:flex; gap:8px">
+            <button class="btn" id="bulkIn"><i class="fa-solid fa-person-walking-arrow-right"></i> Mark In</button>
+            <button class="btn" id="bulkOut"><i class="fa-solid fa-person-walking-dashed-line-arrow-right"></i> Mark Out</button>
+            <button class="btn danger" id="bulkDelete"><i class="fa-solid fa-trash"></i> Delete</button>
+          </div>
+        </div>
+
+        <div style="overflow:auto; border:1px solid var(--border); border-radius:12px">
+          <table aria-label="Residents table">
+            <thead>
+              <tr>
+                <th style="width:36px"><input type="checkbox" id="checkAll" title="Select all"/></th>
+                <th data-sort="name">Name</th>
+                <th class="th-sm" data-sort="id">ID</th>
+                <th class="th-sm" data-sort="block">Block</th>
+                <th class="th-sm" data-sort="room">Room</th>
+                <th class="th-sm" data-sort="phone">Phone</th>
+                <th class="th-sm" data-sort="status">Status</th>
+                <th class="th-sm" data-sort="guardian">Guardian</th>
+                <th class="th-sm" data-sort="updated">Updated</th>
+                <th style="width:220px">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pager">
+          <span class="muted" id="pageInfo">0–0 of 0</span>
+          <select id="pageSize">
+            <option>10</option><option>25</option><option>50</option>
+          </select>
+          <button class="btn" id="prevPg"><i class="fa-solid fa-chevron-left"></i></button>
+          <button class="btn" id="nextPg"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+      </section>
+
+      <!-- Right: Activity Log -->
+      <aside>
+        <section class="card">
+          <h3 style="margin:0 0 8px">Activity Log</h3>
+          <div class="muted" style="margin-bottom:8px">Recent resident events.</div>
+          <div class="log">
+            <table>
+              <thead>
+                <tr>
+                  <th class="th-sm">Time</th>
+                  <th class="th-sm">Resident</th>
+                  <th>Event</th>
+                  <th style="width:18px"></th>
+                </tr>
+              </thead>
+              <tbody id="logBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal hidden" id="modal">
+    <div class="panel">
+      <h2 id="modalTitle">Add Resident</h2>
+      <div class="row">
+        <div>
+          <label for="fName">Full Name</label>
+          <input id="fName" placeholder="e.g., Ananya Sharma" />
+        </div>
+        <div>
+          <label for="fId">Resident ID</label>
+          <input id="fId" placeholder="e.g., HS-2025-001" />
+        </div>
+        <div>
+          <label for="fBlock">Block</label>
+          <select id="fBlock"><option>A</option><option>B</option><option>C</option><option>D</option></select>
+        </div>
+        <div>
+          <label for="fRoom">Room</label>
+          <input id="fRoom" placeholder="e.g., 203" />
+        </div>
+        <div>
+          <label for="fPhone">Phone</label>
+          <input id="fPhone" placeholder="e.g., 9876543210" />
+        </div>
+        <div>
+          <label for="fGuardian">Guardian</label>
+          <input id="fGuardian" placeholder="e.g., S. Sharma" />
+        </div>
+      </div>
+      <div class="footer">
+        <button class="btn" id="cancelModal">Cancel</button>
+        <button class="btn primary" id="saveModal">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ---------- Helpers & UI ---------- */
+    const $ = (q, el=document)=> el.querySelector(q);
+    const $$ = (q, el=document)=> Array.from(el.querySelectorAll(q));
+    const toasts = $('.toasts');
+
+    const showToast = (msg, type='success')=>{
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.innerHTML = `<i class="fa-solid ${type==='danger'?'fa-circle-xmark':type==='warn'?'fa-triangle-exclamation':'fa-circle-check'}"></i><span>${msg}</span>`;
+      toasts.appendChild(t); setTimeout(()=>t.remove(), 3000);
+    };
+    const fmtTime = (d=new Date())=>{
+      const pad = n=>String(n).padStart(2,'0');
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    };
+    const fmtDate = (ms)=> new Date(ms).toLocaleString();
+
+    /* ---------- Theme ---------- */
+    const setTheme = (mode)=>{
+      document.documentElement.removeAttribute('data-theme');
+      if(mode!=='auto') document.documentElement.setAttribute('data-theme', mode);
+      localStorage.setItem('res_theme', mode);
+      $('#lightBtn').classList.toggle('active', mode==='light');
+      $('#autoBtn').classList.toggle('active', mode==='auto');
+      $('#darkBtn').classList.toggle('active', mode==='dark');
+      showToast(`Theme: ${mode}`,'success');
+    };
+    $('#lightBtn').addEventListener('click', ()=> setTheme('light'));
+    $('#autoBtn').addEventListener('click', ()=> setTheme('auto'));
+    $('#darkBtn').addEventListener('click', ()=> setTheme('dark'));
+    setTheme(localStorage.getItem('res_theme') || 'auto');
+
+    /* ---------- Dataset ---------- */
+    const STORAGE_KEY = 'safehostel_residents_v1';
+    const LOG_KEY = 'safehostel_residents_log_v1';
+
+    const demoResidents = [
+      {id:'HS-2025-001', name:'Ananya Sharma', block:'A', room:'101', phone:'9876543210', guardian:'S. Sharma', status:'in', updated: Date.now()-3600e3},
+      {id:'HS-2025-002', name:'Raghav Iyer', block:'B', room:'203', phone:'9898989898', guardian:'M. Iyer', status:'out', updated: Date.now()-7200e3},
+      {id:'HS-2025-003', name:'Priya Singh', block:'A', room:'319', phone:'9123456780', guardian:'K. Singh', status:'in', updated: Date.now()-1800e3},
+      {id:'HS-2025-004', name:'Arjun Patel', block:'C', room:'212', phone:'9000000000', guardian:'R. Patel', status:'in', updated: Date.now()-600e3},
+      {id:'HS-2025-005', name:'Tanvi Mehta', block:'D', room:'405', phone:'9811111111', guardian:'J. Mehta', status:'out', updated: Date.now()-86400e3}
+    ];
+
+    function loadResidents(){
+      const s = localStorage.getItem(STORAGE_KEY);
+      return s ? JSON.parse(s) : demoResidents.slice();
+    }
+    function saveResidents(arr){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+    }
+    function loadLog(){
+      const s = localStorage.getItem(LOG_KEY);
+      return s ? JSON.parse(s) : [];
+    }
+    function saveLog(arr){
+      localStorage.setItem(LOG_KEY, JSON.stringify(arr));
+    }
+
+    let residents = loadResidents();
+    let activity = loadLog();
+
+    /* ---------- State: filters, sort, page ---------- */
+    const state = {
+      q: '', status:'', block:'', room:'',
+      sort: {key:'updated', dir:'desc'},
+      page: 1, pageSize: Number(localStorage.getItem('res_pageSize') || 10)
+    };
+
+    /* ---------- DOM refs ---------- */
+    const tbody = $('#tbody');
+    const logBody = $('#logBody');
+    const searchBox = $('#searchBox');
+    const statusFilter = $('#statusFilter');
+    const blockFilter = $('#blockFilter');
+    const roomFilter = $('#roomFilter');
+    const pageInfo = $('#pageInfo');
+    const pageSize = $('#pageSize');
+    const prevPg = $('#prevPg');
+    const nextPg = $('#nextPg');
+    const checkAll = $('#checkAll');
+
+    const statTotal = $('#statTotal');
+    const statIn = $('#statIn');
+    const statOut = $('#statOut');
+    const statOcc = $('#statOcc');
+
+    /* ---------- Filtering & Sorting ---------- */
+    function normalized(s){ return (s||'').toString().toLowerCase().trim(); }
+
+    function getFiltered(){
+      return residents.filter(r=>{
+        const hit = normalized(r.name).includes(state.q) || normalized(r.id).includes(state.q) || normalized(r.phone).includes(state.q);
+        const sOk = !state.status || r.status===state.status;
+        const bOk = !state.block || r.block===state.block;
+        const rOk = !state.room || normalized(r.room)===normalized(state.room);
+        return hit && sOk && bOk && rOk;
+      }).sort((a,b)=>{
+        const {key, dir} = state.sort;
+        const va = a[key], vb = b[key];
+        let cmp = 0;
+        if(key==='updated'){ cmp = (va||0)-(vb||0); }
+        else { cmp = String(va).localeCompare(String(vb), undefined, {numeric:true}); }
+        return dir==='asc' ? cmp : -cmp;
+      });
+    }
+
+    function getPaged(rows){
+      const sz = state.pageSize;
+      const total = rows.length;
+      const pages = Math.max(1, Math.ceil(total/sz));
+      state.page = Math.min(state.page, pages);
+      const start = (state.page-1)*sz;
+      const end = Math.min(start+sz, total);
+      return {rows: rows.slice(start, end), start, end, total, pages};
+    }
+
+    /* ---------- Rendering ---------- */
+    function renderStats(){
+      const total = residents.length;
+      const inCount = residents.filter(r=>r.status==='in').length;
+      const outCount = total - inCount;
+      const occ = total ? Math.round((inCount/total)*100) : 0;
+      statTotal.textContent = total;
+      statIn.textContent = inCount;
+      statOut.textContent = outCount;
+      statOcc.textContent = occ + '%';
+    }
+
+    function renderTable(){
+      const filtered = getFiltered();
+      const page = getPaged(filtered);
+
+      tbody.innerHTML = page.rows.map(r=>{
+        const statusCls = r.status==='in' ? 'in' : 'out';
+        return `<tr data-id="${r.id}">
+          <td><input type="checkbox" class="rowCheck"/></td>
+          <td>${r.name}</td>
+          <td>${r.id}</td>
+          <td>${r.block}</td>
+          <td>${r.room}</td>
+          <td><a href="tel:${r.phone}">${r.phone}</a></td>
+          <td><span class="status ${statusCls}">${r.status.toUpperCase()}</span></td>
+          <td>${r.guardian||''}</td>
+          <td>${fmtDate(r.updated||Date.now())}</td>
+          <td>
+            <div class="table-actions">
+              <button class="btn min ${r.status==='in'?'warn':'success'} act-toggle">${r.status==='in'?'Mark Out':'Mark In'}</button>
+              <button class="btn min act-edit"><i class="fa-regular fa-pen-to-square"></i> Edit</button>
+              <button class="btn min danger act-del"><i class="fa-regular fa-trash-can"></i> Delete</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+
+      pageInfo.textContent = `${page.total? (page.start+1) : 0}–${page.end} of ${page.total}`;
+      prevPg.disabled = state.page<=1;
+      nextPg.disabled = state.page>=page.pages;
+      pageSize.value = String(state.pageSize);
+
+      // clear select-all
+      checkAll.checked = false;
+    }
+
+    function renderLog(){
+      logBody.innerHTML = activity.slice().reverse().map(row=>{
+        const dot = row.level==='ok'?'dot-green':row.level==='warn'?'dot-orange':'dot-red';
+        return `<tr><td>${row.time}</td><td>${row.name}</td><td>${row.event}</td><td><span class="status-dot ${dot}"></span></td></tr>`;
+      }).join('');
+    }
+
+    function addLog(name, event, level='ok'){
+      activity.push({time:fmtTime(new Date()), name, event, level});
+      if(activity.length>200) activity.shift();
+      saveLog(activity);
+      renderLog();
+    }
+
+    function renderAll(){
+      renderStats();
+      renderTable();
+      renderLog();
+    }
+
+    /* ---------- Sorting handlers ---------- */
+    $$('thead th[data-sort]').forEach(th=>{
+      th.addEventListener('click', ()=>{
+        const key = th.getAttribute('data-sort');
+        if(state.sort.key===key){
+          state.sort.dir = state.sort.dir==='asc'?'desc':'asc';
+        } else {
+          state.sort.key = key; state.sort.dir='asc';
+        }
+        renderTable();
+      });
+    });
+
+    /* ---------- Filters ---------- */
+    searchBox.addEventListener('input', ()=>{ state.q = normalized(searchBox.value); state.page=1; renderTable(); });
+    statusFilter.addEventListener('change', ()=>{ state.status = statusFilter.value; state.page=1; renderTable(); });
+    blockFilter.addEventListener('change', ()=>{ state.block = blockFilter.value; state.page=1; renderTable(); });
+    roomFilter.addEventListener('input', ()=>{ state.room = roomFilter.value.trim(); state.page=1; renderTable(); });
+    $('#clearFilters').addEventListener('click', ()=>{
+      searchBox.value=''; statusFilter.value=''; blockFilter.value=''; roomFilter.value='';
+      state.q=''; state.status=''; state.block=''; state.room=''; state.page=1; renderTable();
+    });
+
+    /* ---------- Pagination ---------- */
+    pageSize.addEventListener('change', ()=>{
+      state.pageSize = Number(pageSize.value); localStorage.setItem('res_pageSize', state.pageSize);
+      state.page=1; renderTable();
+    });
+    prevPg.addEventListener('click', ()=>{ state.page = Math.max(1, state.page-1); renderTable(); });
+    nextPg.addEventListener('click', ()=>{ state.page = state.page+1; renderTable(); });
+
+    /* ---------- Row actions (event delegation) ---------- */
+    tbody.addEventListener('click', (e)=>{
+      const tr = e.target.closest('tr'); if(!tr) return;
+      const id = tr.getAttribute('data-id');
+      const r = residents.find(x=>x.id===id);
+
+      if(e.target.closest('.act-toggle')){
+        r.status = r.status==='in'?'out':'in';
+        r.updated = Date.now();
+        saveResidents(residents);
+        renderAll();
+        addLog(r.name, r.status==='in'?'Checked In':'Checked Out', r.status==='in'?'ok':'warn');
+        showToast(`${r.name} marked ${r.status.toUpperCase()}`, r.status==='in'?'success':'warn');
+      }
+      if(e.target.closest('.act-edit')){
+        openModal('edit', r);
+      }
+      if(e.target.closest('.act-del')){
+        if(confirm(`Delete ${r.name}?`)){
+          residents = residents.filter(x=>x.id!==id);
+          saveResidents(residents);
+          renderAll();
+          addLog(r.name, 'Deleted','danger');
+          showToast('Resident deleted','danger');
+        }
+      }
+    });
+
+    /* ---------- Bulk select ---------- */
+    checkAll.addEventListener('change', ()=>{
+      $$('.rowCheck', tbody).forEach(cb=> cb.checked = checkAll.checked);
+    });
+    function getSelectedIds(){
+      return $$('.rowCheck', tbody).map((cb, i)=> ({cb, tr: cb.closest('tr')}))
+        .filter(x=>x.cb.checked).map(x=> x.tr.getAttribute('data-id'));
+    }
+    $('#bulkIn').addEventListener('click', ()=>{
+      const ids = getSelectedIds(); if(!ids.length) return;
+      residents.forEach(r=>{ if(ids.includes(r.id)){ r.status='in'; r.updated=Date.now(); addLog(r.name,'Checked In','ok'); } });
+      saveResidents(residents); renderAll(); showToast('Marked IN selected','success');
+    });
+    $('#bulkOut').addEventListener('click', ()=>{
+      const ids = getSelectedIds(); if(!ids.length) return;
+      residents.forEach(r=>{ if(ids.includes(r.id)){ r.status='out'; r.updated=Date.now(); addLog(r.name,'Checked Out','warn'); } });
+      saveResidents(residents); renderAll(); showToast('Marked OUT selected','warn');
+    });
+    $('#bulkDelete').addEventListener('click', ()=>{
+      const ids = getSelectedIds(); if(!ids.length) return;
+      if(!confirm(`Delete ${ids.length} resident(s)?`)) return;
+      const names = residents.filter(r=>ids.includes(r.id)).map(r=>r.name);
+      residents = residents.filter(r=>!ids.includes(r.id));
+      saveResidents(residents); renderAll();
+      names.forEach(n=>addLog(n,'Deleted','danger'));
+      showToast('Deleted selected','danger');
+    });
+
+    /* ---------- CSV Import/Export ---------- */
+    function toCSV(arr){
+      const cols = ['id','name','block','room','phone','guardian','status','updated'];
+      const head = cols.join(',');
+      const rows = arr.map(r=> cols.map(k=>{
+        let v = r[k] ?? '';
+        if(typeof v === 'string'){
+          const needsQuote = /[,"\n]/.test(v);
+          v = v.replace(/"/g, '""');
+          return needsQuote ? `"${v}"` : v;
+        }
+        return v;
+      }).join(',')).join('\n');
+      return head + '\n' + rows;
+    }
+    function download(filename, text){
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text], {type:'text/csv'}));
+      a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+    }
+    $('#exportCsv').addEventListener('click', ()=>{
+      const csv = toCSV(residents);
+      download('residents.csv', csv);
+      showToast('CSV exported','success');
+    });
+    $('#importCsv').addEventListener('click', ()=> $('#csvInput').click());
+    $('#csvInput').addEventListener('change', (e)=>{
+      const f = e.target.files[0]; if(!f) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const lines = reader.result.split(/\r?\n/).filter(Boolean);
+          const head = lines.shift().split(',').map(s=>s.trim().replace(/^"|"$/g,''));
+          const idx = (k)=> head.indexOf(k);
+          const imported = lines.map(line=>{
+            const parts = [];
+            let cur='', inQ=false;
+            for(let i=0;i<line.length;i++){
+              const ch=line[i];
+              if(ch==='"' ){
+                if(inQ && line[i+1]==='"'){ cur+='"'; i++; }
+                else inQ=!inQ;
+              } else if(ch===',' && !inQ){ parts.push(cur); cur=''; }
+              else cur+=ch;
+            }
+            parts.push(cur);
+            const g = k => (parts[idx(k)]||'').trim();
+            return {
+              id:g('id'), name:g('name'), block:g('block')||'A', room:g('room')||'',
+              phone:g('phone')||'', guardian:g('guardian')||'',
+              status:(g('status')||'in').toLowerCase()==='out'?'out':'in',
+              updated: Number(g('updated')) || Date.now()
+            };
+          }).filter(r=>r.id && r.name);
+          // Merge on ID (replace existing)
+          const map = new Map(residents.map(r=>[r.id, r]));
+          imported.forEach(r=> map.set(r.id, r));
+          residents = Array.from(map.values());
+          saveResidents(residents); renderAll();
+          showToast(`Imported ${imported.length} record(s)`,'success');
+        }catch(err){
+          console.error(err);
+          showToast('Import failed','danger');
+        } finally {
+          e.target.value = '';
+        }
+      };
+      reader.readAsText(f);
+    });
+
+    /* ---------- Modal (Add/Edit) ---------- */
+    const modal = $('#modal');
+    const modalTitle = $('#modalTitle');
+    const fName = $('#fName'); const fId = $('#fId'); const fBlock = $('#fBlock'); const fRoom = $('#fRoom'); const fPhone = $('#fPhone'); const fGuardian = $('#fGuardian');
+    let editingId = null;
+
+    function openModal(mode='add', data=null){
+      modal.classList.remove('hidden');
+      modalTitle.textContent = mode==='add' ? 'Add Resident' : 'Edit Resident';
+      editingId = mode==='edit' ? data.id : null;
+      fName.value = data?.name || ''; fId.value = data?.id || ''; fBlock.value = data?.block || 'A';
+      fRoom.value = data?.room || ''; fPhone.value = data?.phone || ''; fGuardian.value = data?.guardian || '';
+      fName.focus();
+    }
+    function closeModal(){ modal.classList.add('hidden'); }
+    $('#addResident').addEventListener('click', ()=> openModal('add'));
+    $('#cancelModal').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
+    document.addEventListener('keydown', (e)=>{ if(!modal.classList.contains('hidden') && e.key==='Escape') closeModal(); });
+
+    $('#saveModal').addEventListener('click', ()=>{
+      const name = fName.value.trim();
+      const id = fId.value.trim();
+      if(!name || !id){ showToast('Name and ID are required','warn'); return; }
+      const rec = {
+        id, name,
+        block: fBlock.value || 'A',
+        room: fRoom.value || '',
+        phone: fPhone.value || '',
+        guardian: fGuardian.value || '',
+        status: 'in',
+        updated: Date.now()
+      };
+      if(editingId && editingId!==id){
+        // if ID changed, remove old one
+        residents = residents.filter(r=>r.id!==editingId);
+      }
+      const existing = residents.findIndex(r=>r.id===id);
+      if(existing>-1){ residents[existing] = {...residents[existing], ...rec}; addLog(name,'Edited','ok'); }
+      else { residents.push(rec); addLog(name,'Added','ok'); }
+      saveResidents(residents); renderAll(); closeModal();
+      showToast('Saved','success');
+    });
+
+    /* ---------- Toolbar events ---------- */
+    $('#datasetInfo').textContent = 'Local dataset';
+    $('#addResident').title = 'Add a new resident';
+    searchBox.placeholder = 'Search name, ID, phone…';
+
+    /* ---------- Init ---------- */
+    function init(){
+      renderAll();
+      // default log entry
+      if(activity.length===0){ addLog('System','Residents page opened','ok'); }
+    }
+    init();
+  </script>
+</body>
+</html>

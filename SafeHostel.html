@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SafeHostel | Gate Status</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    :root{
+      --primary:#5d50c6;
+      --secondary:#38a169;
+      --danger:#e53e3e;
+      --warning:#dd6b20;
+
+      --bg:#f7f7f7;
+      --card:#ffffff;
+      --text:#2d3748;
+      --muted:#718096;
+      --border:#e2e8f0;
+      --ring: rgba(93,80,198,.35);
+      --chip:#edf2f7;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg:#0f1220; --card:#151a2e; --text:#e6eaf3; --muted:#9aa3b2;
+        --border:#232a45; --chip:#0f142c; --ring: rgba(93,80,198,.5);
+      }
+    }
+    [data-theme="light"]{ --bg:#f7f7f7; --card:#ffffff; --text:#2d3748; --muted:#718096; --border:#e2e8f0; --chip:#edf2f7; --ring: rgba(93,80,198,.35); }
+    [data-theme="dark"]{ --bg:#0f1220; --card:#151a2e; --text:#e6eaf3; --muted:#9aa3b2; --border:#232a45; --chip:#0f142c; --ring: rgba(93,80,198,.5); }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text)}
+    .hidden{display:none !important}
+    :focus-visible{outline:2px solid var(--ring); outline-offset:2px; border-radius:8px}
+
+    /* Header */
+    header{
+      position:sticky; top:0; z-index:20;
+      background:var(--card); border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      padding:14px 20px;
+    }
+    .brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px; color:var(--primary)}
+    .brand i{color:var(--primary)}
+    .actions{display:flex; align-items:center; gap:10px}
+    .btn, .seg button{
+      border:1px solid var(--border); background:transparent; color:var(--text);
+      padding:8px 12px; border-radius:10px; cursor:pointer; font-size:14px;
+      transition:filter .15s ease, transform .05s ease;
+    }
+    .btn:hover{filter:brightness(.96)} .btn:active{transform:translateY(1px)}
+    .btn.primary{background:var(--primary); color:#fff; border-color:transparent}
+    .badge{
+      display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; font-size:12px;
+      background:var(--chip); color:var(--muted); border:1px solid var(--border)
+    }
+    .seg{display:inline-flex; border:1px solid var(--border); border-radius:12px; overflow:hidden}
+    .seg button{border:none; border-right:1px solid var(--border)}
+    .seg button:last-child{border-right:none}
+    .seg .active{background:var(--primary); color:#fff}
+
+    /* Layout */
+    main{padding:20px; max-width:1200px; margin:0 auto}
+    .title-row{display:flex; flex-wrap:wrap; align-items:end; justify-content:space-between; gap:10px}
+    h1{margin:0; color:var(--primary)}
+    .muted{color:var(--muted)}
+    .grid{
+      display:grid; gap:18px; margin-top:18px;
+      grid-template-columns: 1.5fr 1fr;
+    }
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+
+    /* Cards */
+    .card{
+      background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px;
+      box-shadow:0 8px 24px rgba(0,0,0,.06);
+    }
+    .card h2{margin:0 0 6px}
+    .sub{font-size:13px; color:var(--muted); margin-bottom:6px}
+    .divider{height:1px; background:var(--border); margin:12px 0}
+
+    /* Gate list / controls */
+    .gates{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:14px}
+    .gate{
+      border-left:6px solid transparent; border-radius:12px; padding:14px; background:var(--card); border:1px solid var(--border);
+    }
+    .gate.locked{border-left-color:var(--secondary)}
+    .gate.unlocked{border-left-color:var(--danger)}
+    .gate-head{display:flex; align-items:center; justify-content:space-between; gap:8px}
+    .gate-name{font-weight:700; font-size:16px}
+    .chips{display:flex; flex-wrap:wrap; gap:8px; margin:8px 0}
+    .chip{
+      display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; font-size:12px;
+      background:var(--chip); color:var(--muted); border:1px solid var(--border)
+    }
+    .chip.ok{color:var(--secondary)}
+    .chip.warn{color:var(--warning)}
+    .chip.bad{color:var(--danger)}
+    .gate-ctrl{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
+    .btn.min{padding:6px 10px; font-size:13px}
+    .btn.success{background:var(--secondary); color:#fff; border-color:transparent}
+    .btn.warn{background:var(--warning); color:#fff; border-color:transparent}
+    .btn.danger{background:var(--danger); color:#fff; border-color:transparent}
+    .small{font-size:12px; color:var(--muted)}
+
+    /* Right column */
+    .stack{display:grid; gap:18px}
+    .log{max-height:360px; overflow:auto; border-radius:12px; border:1px solid var(--border)}
+    table{width:100%; border-collapse:collapse; font-size:14px}
+    thead th{position:sticky; top:0; background:var(--card); border-bottom:1px solid var(--border); text-align:left; padding:10px}
+    tbody td{border-top:1px solid var(--border); padding:10px; vertical-align:top}
+    .status-dot{width:8px; height:8px; border-radius:999px; display:inline-block}
+    .dot-green{background:var(--secondary)}
+    .dot-red{background:var(--danger)}
+    .dot-orange{background:var(--warning)}
+
+    /* Scheduler */
+    .schedule-row{display:flex; flex-wrap:wrap; gap:10px}
+    .schedule-row input[type="time"]{padding:8px 10px; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:10px}
+    .days{display:flex; gap:6px; flex-wrap:wrap}
+    .day{
+      padding:6px 10px; border:1px solid var(--border); border-radius:999px; cursor:pointer; user-select:none;
+      background:transparent; color:var(--muted)
+    }
+    .day.active{background:var(--primary); color:#fff; border-color:transparent}
+
+    /* Toasts */
+    .toasts{position:fixed; right:16px; top:16px; display:flex; flex-direction:column; gap:10px; z-index:60}
+    .toast{
+      background:var(--card); border:1px solid var(--border); padding:10px 14px; border-radius:10px;
+      box-shadow:0 8px 24px rgba(0,0,0,.25); display:flex; align-items:center; gap:10px; min-width:260px;
+    }
+    .toast.success{border-left:5px solid var(--secondary)}
+    .toast.warn{border-left:5px solid var(--warning)}
+    .toast.danger{border-left:5px solid var(--danger)}
+  </style>
+</head>
+<body>
+  <!-- Toasts -->
+  <div class="toasts" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <i class="fa-solid fa-door-closed"></i>
+      <span>SafeHostel • Gate Status</span>
+    </div>
+    <div class="actions">
+      <span class="badge"><i class="fa-solid fa-satellite-dish"></i> Controller: <span id="ctlState">Online</span></span>
+      <div class="seg" role="group" aria-label="Theme">
+        <button id="lightBtn" title="Light">Light</button>
+        <button id="autoBtn"  class="active" title="System">Auto</button>
+        <button id="darkBtn"  title="Dark">Dark</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="title-row">
+      <div>
+        <h1>Gate Controls</h1>
+        <div class="muted">Monitor and operate hostel entry points. Demo-only: local state, no backend.</div>
+      </div>
+      <div>
+        <button class="btn" id="simulateBtn" title="Simulate sensor event"><i class="fa-solid fa-wave-square"></i> Simulate Sensor</button>
+        <button class="btn" id="refreshBtn" title="Refresh statuses"><i class="fa-solid fa-rotate"></i> Refresh</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Left: Gates -->
+      <section class="card">
+        <h2>Gates</h2>
+        <div class="sub">Click actions to lock/unlock or open briefly. Mode “Auto” means schedule applies.</div>
+        <div class="divider"></div>
+
+        <div class="gates" id="gates">
+          <!-- Gate cards rendered by JS -->
+        </div>
+      </section>
+
+      <!-- Right: Logs + Schedule -->
+      <aside class="stack">
+        <section class="card">
+          <h2>Auto Schedule</h2>
+          <div class="sub">Times when gates should be locked (Auto mode only).</div>
+          <div class="divider"></div>
+
+          <div class="schedule-row" style="margin-bottom:10px">
+            <label class="badge"><i class="fa-regular fa-clock"></i> Lock From</label>
+            <input type="time" id="lockFrom" value="22:00" />
+            <label class="badge"><i class="fa-regular fa-clock"></i> To</label>
+            <input type="time" id="lockTo" value="06:00" />
+          </div>
+          <div class="days" id="days">
+            <!-- Days toggles -->
+          </div>
+          <div class="divider"></div>
+          <div class="schedule-row">
+            <button class="btn primary" id="saveSchedule"><i class="fa-solid fa-floppy-disk"></i> Save Schedule</button>
+            <span class="small" id="scheduleNote">Unsaved changes</span>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Activity Log</h2>
+          <div class="sub">Most recent events.</div>
+          <div class="divider"></div>
+          <div class="log">
+            <table aria-label="Activity log">
+              <thead>
+                <tr>
+                  <th style="width:110px">Time</th>
+                  <th style="width:90px">Gate</th>
+                  <th>Event</th>
+                  <th style="width:18px"></th>
+                </tr>
+              </thead>
+              <tbody id="logBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    /* ------- Utilities ------- */
+    const $ = (q, el=document)=> el.querySelector(q);
+    const $$ = (q, el=document)=> Array.from(el.querySelectorAll(q));
+    const toasts = $('.toasts');
+
+    const showToast = (msg, type="success")=>{
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.innerHTML = `<i class="fa-solid ${type==="danger"?"fa-circle-xmark":type==="warn"?"fa-triangle-exclamation":"fa-circle-check"}"></i><span>${msg}</span>`;
+      toasts.appendChild(t);
+      setTimeout(()=> t.remove(), 3000);
+    };
+
+    const fmtTime = (d = new Date())=>{
+      const pad = n => String(n).padStart(2,'0');
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    };
+
+    /* ------- Theme ------- */
+    const setTheme = (mode)=>{
+      document.documentElement.removeAttribute('data-theme');
+      if(mode!=="auto") document.documentElement.setAttribute('data-theme', mode);
+      localStorage.setItem('gate_theme', mode);
+      $('#lightBtn').classList.toggle('active', mode==='light');
+      $('#autoBtn').classList.toggle('active', mode==='auto');
+      $('#darkBtn').classList.toggle('active', mode==='dark');
+      showToast(`Theme: ${mode}`, 'success');
+    };
+    $('#lightBtn').addEventListener('click', ()=> setTheme('light'));
+    $('#autoBtn').addEventListener('click', ()=> setTheme('auto'));
+    $('#darkBtn').addEventListener('click', ()=> setTheme('dark'));
+    setTheme(localStorage.getItem('gate_theme') || 'auto');
+
+    /* ------- Demo Data ------- */
+    const gates = [
+      {
+        id:'main',
+        name:'Main Gate',
+        locked:true,
+        mode:'auto',              // 'auto' | 'manual'
+        doorSensor:'closed',      // 'closed' | 'open'
+        boltSensor:'engaged',     // 'engaged' | 'disengaged'
+        tamper:false,
+        battery:95,
+        lastEvent:'Boot',
+        lastTs: Date.now()
+      },
+      {
+        id:'side',
+        name:'Side Gate',
+        locked:true,
+        mode:'manual',
+        doorSensor:'closed',
+        boltSensor:'engaged',
+        tamper:false,
+        battery:88,
+        lastEvent:'Boot',
+        lastTs: Date.now()
+      }
+    ];
+
+    function saveState(){
+      sessionStorage.setItem('safehostel_gate_state', JSON.stringify(gates));
+    }
+    function loadState(){
+      const s = sessionStorage.getItem('safehostel_gate_state');
+      if(s){
+        const data = JSON.parse(s);
+        data.forEach(d=>{
+          const idx = gates.findIndex(g=>g.id===d.id);
+          if(idx>-1) gates[idx] = {...gates[idx], ...d};
+        });
+      }
+    }
+    loadState();
+
+    /* ------- Rendering ------- */
+    const gatesWrap = $('#gates');
+    const logBody = $('#logBody');
+
+    function statusChip(text, level=''){
+      const icon = level==='ok' ? 'fa-circle-check' : level==='warn' ? 'fa-triangle-exclamation' : level==='bad' ? 'fa-circle-xmark' : 'fa-circle-info';
+      return `<span class="chip ${level}"><i class="fa-solid ${icon}"></i>${text}</span>`;
+    }
+
+    function gateCard(g){
+      const cls = g.locked ? 'locked' : 'unlocked';
+      const door = g.doorSensor==='closed' ? statusChip('Door Closed','ok') : statusChip('Door Open','bad');
+      const bolt = g.boltSensor==='engaged' ? statusChip('Bolt Engaged','ok') : statusChip('Bolt Disengaged','bad');
+      const tamp = g.tamper ? statusChip('Tamper','bad') : statusChip('Secure','ok');
+      const battLev = g.battery>=60 ? 'ok' : g.battery>=30 ? 'warn' : 'bad';
+      const batt = statusChip(`Battery ${g.battery}%`, battLev);
+      const modeChip = g.mode==='auto' ? statusChip('Mode: Auto','ok') : statusChip('Mode: Manual','warn');
+      const lockChip = g.locked ? statusChip('LOCKED','ok') : statusChip('UNLOCKED','bad');
+
+      return `
+      <div class="gate ${cls}" id="gate-${g.id}" aria-live="polite">
+        <div class="gate-head">
+          <div class="gate-name"><i class="fa-solid ${g.id==='main'?'fa-door-closed':'fa-door-open'}"></i> ${g.name}</div>
+          ${lockChip}
+        </div>
+        <div class="chips">
+          ${modeChip} ${door} ${bolt} ${tamp} ${batt}
+        </div>
+        <div class="small">Last: ${g.lastEvent} • ${new Date(g.lastTs).toLocaleTimeString()}</div>
+        <div class="gate-ctrl">
+          <button class="btn min success" data-act="lock" data-id="${g.id}" ${g.locked?'disabled':''}><i class="fa-solid fa-lock"></i> Lock</button>
+          <button class="btn min danger" data-act="unlock" data-id="${g.id}" ${!g.locked?'disabled':''}><i class="fa-solid fa-lock-open"></i> Unlock</button>
+          <button class="btn min warn" data-act="pulse" data-id="${g.id}"><i class="fa-solid fa-stopwatch"></i> Open 10s</button>
+          <button class="btn min" data-act="toggleMode" data-id="${g.id}"><i class="fa-solid fa-rotate"></i> Toggle Mode</button>
+          <button class="btn min" data-act="ack" data-id="${g.id}"><i class="fa-solid fa-bell-slash"></i> Ack Alerts</button>
+        </div>
+      </div>`;
+    }
+
+    function renderGates(){
+      gatesWrap.innerHTML = gates.map(gateCard).join('');
+    }
+
+    function logRow(time, gate, event, level='ok'){
+      const dot = level==='ok'?'dot-green':level==='warn'?'dot-orange':'dot-red';
+      return `<tr><td>${time}</td><td>${gate}</td><td>${event}</td><td><span class="status-dot ${dot}"></span></td></tr>`;
+    }
+
+    function addLog(gateName, event, level='ok'){
+      const row = logRow(fmtTime(new Date()), gateName, event, level);
+      logBody.insertAdjacentHTML('afterbegin', row);
+    }
+
+    /* ------- Actions ------- */
+    function findGate(id){ return gates.find(g=>g.id===id); }
+
+    function setLock(id, locked, reason){
+      const g = findGate(id); if(!g) return;
+      g.locked = locked;
+      g.boltSensor = locked ? 'engaged' : 'disengaged';
+      g.lastEvent = `${locked?'Locked':'Unlocked'} (${reason})`;
+      g.lastTs = Date.now();
+      saveState(); renderGates();
+      addLog(g.name, g.lastEvent, locked?'ok':'warn');
+      showToast(`${g.name} ${locked?'locked':'unlocked'}.`, locked?'success':'warn');
+    }
+
+    function pulseOpen(id, ms=10000){
+      const g = findGate(id); if(!g) return;
+      if(!confirm(`Open ${g.name} for ${Math.round(ms/1000)} seconds?`)) return;
+      const wasLocked = g.locked;
+      setLock(id, false, 'Pulse');
+      setTimeout(()=> setLock(id, true, 'Pulse Auto-Relock'), ms);
+    }
+
+    function toggleMode(id){
+      const g = findGate(id); if(!g) return;
+      g.mode = g.mode==='auto' ? 'manual' : 'auto';
+      g.lastEvent = `Mode -> ${g.mode.toUpperCase()}`;
+      g.lastTs = Date.now();
+      saveState(); renderGates();
+      addLog(g.name, g.lastEvent, g.mode==='auto'?'ok':'warn');
+      showToast(`${g.name} mode: ${g.mode}`, g.mode==='auto'?'success':'warn');
+    }
+
+    function ackAlerts(id){
+      const g = findGate(id); if(!g) return;
+      g.tamper = false;
+      g.lastEvent = 'Alerts Acknowledged';
+      g.lastTs = Date.now();
+      saveState(); renderGates();
+      addLog(g.name, g.lastEvent, 'ok');
+      showToast(`Alerts cleared for ${g.name}`, 'success');
+    }
+
+    /* ------- Event Delegation for Gate Buttons ------- */
+    gatesWrap.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button[data-act]');
+      if(!btn) return;
+      const { act, id } = btn.dataset;
+      if(act==='lock') setLock(id, true, 'Manual');
+      if(act==='unlock') setLock(id, false, 'Manual');
+      if(act==='pulse') pulseOpen(id, 10000);
+      if(act==='toggleMode') toggleMode(id);
+      if(act==='ack') ackAlerts(id);
+    });
+
+    /* ------- Simulations / Refresh ------- */
+    $('#simulateBtn').addEventListener('click', ()=>{
+      // Randomly pick a gate and a simulated event
+      const g = gates[Math.floor(Math.random()*gates.length)];
+      const r = Math.random();
+
+      if(r < .33){
+        g.doorSensor = g.doorSensor==='closed' ? 'open' : 'closed';
+        g.lastEvent = `Door ${g.doorSensor}`;
+        addLog(g.name, g.lastEvent, g.doorSensor==='open'?'warn':'ok');
+        showToast(`${g.name}: Door ${g.doorSensor}`, g.doorSensor==='open'?'warn':'success');
+      } else if(r < .66){
+        g.tamper = !g.tamper;
+        g.lastEvent = g.tamper ? 'Tamper Detected' : 'Tamper Cleared';
+        addLog(g.name, g.lastEvent, g.tamper?'danger':'ok');
+        showToast(`${g.name}: ${g.lastEvent}`, g.tamper?'danger':'success');
+      } else{
+        g.battery = Math.max(5, g.battery - (5 + Math.round(Math.random()*10)));
+        g.lastEvent = `Battery ${g.battery}%`;
+        const lvl = g.battery<30?'danger':g.battery<60?'warn':'ok';
+        addLog(g.name, g.lastEvent, lvl);
+        showToast(`${g.name}: ${g.lastEvent}`, lvl==='danger'?'danger':lvl==='warn'?'warn':'success');
+      }
+      g.lastTs = Date.now();
+      saveState(); renderGates();
+    });
+
+    $('#refreshBtn').addEventListener('click', ()=>{
+      $('#ctlState').textContent = 'Online';
+      showToast('Statuses refreshed');
+      renderGates();
+    });
+
+    /* ------- Schedule (demo) ------- */
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const daysWrap = $('#days');
+    const scheduleNote = $('#scheduleNote');
+    const sched = JSON.parse(localStorage.getItem('safehostel_schedule') || '{"from":"22:00","to":"06:00","days":[1,2,3,4,5]}');
+
+    function renderDays(){
+      daysWrap.innerHTML = dayNames.map((d,i)=>{
+        const active = sched.days.includes(i) ? 'active' : '';
+        return `<button type="button" class="day ${active}" data-day="${i}">${d}</button>`;
+      }).join('');
+    }
+    function applyScheduleToAutoGates(){
+      // Simple demo: during locked window, auto-gates lock; else unlock
+      const now = new Date();
+      const cur = now.getHours()*60 + now.getMinutes();
+      const [fh,fm] = $('#lockFrom').value.split(':').map(Number);
+      const [th,tm] = $('#lockTo').value.split(':').map(Number);
+      const fromMin = fh*60 + fm;
+      const toMin = th*60 + tm;
+      const today = now.getDay();
+      const windowSpansMidnight = fromMin > toMin;
+      const inWindow = windowSpansMidnight
+        ? (cur >= fromMin || cur < toMin)
+        : (cur >= fromMin && cur < toMin);
+
+      if(!sched.days.includes(today)) return; // no schedule today
+
+      gates.filter(g=>g.mode==='auto').forEach(g=>{
+        const shouldLock = inWindow;
+        if(g.locked !== shouldLock){
+          setLock(g.id, shouldLock, 'Schedule');
+        }
+      });
+    }
+
+    $('#lockFrom').value = sched.from;
+    $('#lockTo').value = sched.to;
+    renderDays();
+
+    daysWrap.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.day'); if(!btn) return;
+      const day = Number(btn.dataset.day);
+      if(sched.days.includes(day)){
+        sched.days = sched.days.filter(d=>d!==day);
+      }else{
+        sched.days.push(day);
+      }
+      renderDays(); scheduleNote.textContent = 'Unsaved changes';
+    });
+
+    $('#lockFrom').addEventListener('input', ()=> scheduleNote.textContent = 'Unsaved changes');
+    $('#lockTo').addEventListener('input', ()=> scheduleNote.textContent = 'Unsaved changes');
+
+    $('#saveSchedule').addEventListener('click', ()=>{
+      sched.from = $('#lockFrom').value;
+      sched.to = $('#lockTo').value;
+      sched.days.sort((a,b)=>a-b);
+      localStorage.setItem('safehostel_schedule', JSON.stringify(sched));
+      scheduleNote.textContent = 'Saved';
+      showToast('Schedule saved', 'success');
+      applyScheduleToAutoGates();
+    });
+
+    // Apply schedule every minute (demo)
+    setInterval(applyScheduleToAutoGates, 60000);
+
+    /* ------- Init ------- */
+    function init(){
+      renderGates();
+      addLog('System','Gate status page opened','ok');
+      applyScheduleToAutoGates();
+    }
+    init();
+  </script>
+</body>
+</html>
